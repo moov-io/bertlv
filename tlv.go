@@ -237,3 +237,21 @@ func decodeLength(data []byte) (int, int, error) {
 
 	return length, lengthBytes + 1, nil
 }
+
+func FindTag(tlvs []TLV, path string) (TLV, bool) {
+	tag, path, _ := strings.Cut(path, ".")
+
+	for _, tlv := range tlvs {
+		if tlv.Tag == tag {
+			if path == "" {
+				return tlv, true
+			}
+
+			if len(tlv.TLVs) > 0 {
+				return FindTag(tlv.TLVs, path)
+			}
+		}
+	}
+
+	return TLV{}, false
+}
