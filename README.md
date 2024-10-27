@@ -62,17 +62,44 @@ func TestEncodeDecode(t *testing.T) {
     require.Equal(t, data, decoded)
 
     bertlv.PrettyPrint(decoded)
+
+    // Find a specific tag
+    tag, found := bertlv.FindTag(decoded, "6F.A5.BF0C.61.50")
+    require.True(t, found)
+    require.Equal(t, []byte{0x4D, 0x61, 0x73, 0x74, 0x65, 0x72, 0x63, 0x61, 0x72, 0x64}, tag.Value)
 }
 ```
 
-### Explanation
-- **Encode**: The `bertlv.Encode` function takes a list of TLV objects and encodes them into a hexadecimal string.
-- **Decode**: The `bertlv.Decode` function decodes a hexadecimal string back into a list of TLV objects.
-- **PrettyPrint**: The `bertlv.PrettyPrint` function allows you to visualize the TLV structure in a readable format.
+### Functions
+- **Encode**: The `bertlv.Encode` encodes TLV objects into a binary format.
+- **Decode**: The `bertlv.Decode` decodes a binary value back into a TLV objects.
+- **FindTag**: The `bertlv.FindTag` returns the first TLV object matching the specified path (e.g., "6F.A5.BF0C.61.50").
+- **PrettyPrint**: The `bertlv.PrettyPrint` visaulizes the TLV structure in a readable format.
 
-### TLV Structures
+### TLV Creation
+You can create TLV objects using the following helper functions (preferred way):
 - **Simple Tags**: Use `bertlv.NewTag(tag, value)` to create a TLV with a simple tag.
 - **Composite Tags**: Use `bertlv.NewComposite(tag, subTags...)` to create a TLV that contains nested tags.
+
+Also, you can create TLV objects directly using the `bertlv.TLV` struct (less preferred way, as it's more verbose and less clear):
+
+```go
+	simpledata := []bertlv.TLV{
+		{Tag: "6F", TLVs: []bertlv.TLV{
+			{Tag: "84", Value: []byte{0x32, 0x50, 0x41, 0x59, 0x2E, 0x53, 0x59, 0x53, 0x2E, 0x44, 0x44, 0x46, 0x30, 0x31}},
+			{Tag: "A5", TLVs: []bertlv.TLV{
+				{Tag: "BF0C", TLVs: []bertlv.TLV{
+					{Tag: "61", TLVs: []bertlv.TLV{
+						{Tag: "4F", Value: []byte{0xA0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10}},
+						{Tag: "50", Value: []byte{0x4D, 0x61, 0x73, 0x74, 0x65, 0x72, 0x63, 0x61, 0x72, 0x64}},
+						{Tag: "87", Value: []byte{0x01}},
+					}},
+				}},
+			}},
+
+		}},
+	}
+```
 
 ## Contribution
 
@@ -85,4 +112,3 @@ This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENS
 ## Acknowledgments
 
 This package was inspired by the need to simplify the encoding and decoding of BER-TLV structures commonly used in the financial and card payment industries.
-
