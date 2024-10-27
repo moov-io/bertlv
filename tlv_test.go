@@ -35,4 +35,6 @@ func TestEncodeDecode(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, data, decoded)
+
+	bertlv.PrettyPrint(decoded)
 }

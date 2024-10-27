@@ -105,6 +105,31 @@ func Decode(data []byte) ([]TLV, error) {
 	return tlvs, nil
 }
 
+type ppStack struct {
+	tlvs  []TLV
+	level int
+}
+
+func PrettyPrint(tlvs []TLV) {
+	stack := []ppStack{{tlvs: tlvs, level: 0}}
+
+	for len(stack) > 0 {
+		current := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		for _, tlv := range current.tlvs {
+			indent := strings.Repeat("  ", current.level)
+
+			if len(tlv.TLVs) > 0 {
+				fmt.Printf("%s%s\n", indent, tlv.Tag)
+				stack = append(stack, ppStack{tlvs: tlv.TLVs, level: current.level + 1})
+			} else {
+				fmt.Printf("%s%s %X\n", indent, tlv.Tag, tlv.Value)
+			}
+		}
+	}
+}
+
 // Short Form (Length < 128 bytes) - The first byte is the length of the value
 // field, and the value field follows immediately.
 // Long Form (Length >= 128 bytes) - The first byte is 0x80 plus the number of
