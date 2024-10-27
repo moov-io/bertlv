@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestBuilder(t *testing.T) {
+func TestEncodeDecode(t *testing.T) {
 	// FCI template
 	data := []bertlv.TLV{
 		bertlv.NewComposite("6F", // File Control Information (FCI) Template
@@ -31,19 +31,8 @@ func TestBuilder(t *testing.T) {
 	expectedData := "6F2F840E325041592E5359532E4444463031A51DBF0C1A61184F07A0000000041010500A4D617374657263617264870101"
 	require.Equal(t, expectedData, fmt.Sprintf("%X", encoded))
 
-	// // decode and parse
-	// tags, err := bertlv.Decode(encoded)
-	// require.NoError(t, err)
+	decoded, err := bertlv.Decode(encoded)
+	require.NoError(t, err)
 
-	// // validate tags
-	// require.Len(t, tags, 4)
-
-	// // validate tags
-	// require.Equal(t, "9F02", tags[0].Tag)
-	// require.Equal(t, "9F03", tags[1].Tag)
-	// require.Equal(t, "E1", tags[2].Tag)
-	// require.Equal(t, "E2", tags[3].Tag)
+	require.Equal(t, data, decoded)
 }
-
-// data to parse
-// 6F2F840E325041592E5359532E4444463031A51DBF0C1A61184F07A0000000041010500A4D6173746572636172648701019000
