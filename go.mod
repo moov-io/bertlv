@@ -1,4 +1,4 @@
-module github.com/alovak/bertlv
+module github.com/moov-io/bertlv
 
 go 1.23.1
 

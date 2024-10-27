@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/alovak/bertlv"
+	"github.com/moov-io/bertlv"
 	"github.com/stretchr/testify/require"
 )
 

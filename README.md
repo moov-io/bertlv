@@ -13,7 +13,7 @@
 To install the `bertlv` package, use the following command:
 
 ```sh
-go get github.com/alovak/bertlv
+go get github.com/moov-io/bertlv
 ```
 
 ## Usage
@@ -29,7 +29,7 @@ import (
     "fmt"
     "testing"
 
-    "github.com/alovak/bertlv"
+    "github.com/moov-io/bertlv"
     "github.com/stretchr/testify/require"
 )
 
