@@ -12,10 +12,6 @@ type TLV struct {
 	TLVs  []TLV
 }
 
-func (t TLV) Length() int {
-	return 0
-}
-
 func NewTag(tag string, value []byte) TLV {
 	return TLV{Tag: tag, Value: value}
 }
@@ -30,27 +26,25 @@ func Encode(tlvs []TLV) ([]byte, error) {
 	for i := range tlvs {
 		tag, err := hex.DecodeString(tlvs[i].Tag)
 		if err != nil {
-			return nil, fmt.Errorf("encoding tag %s: %v", tlvs[i], err)
+			return nil, fmt.Errorf("encoding tag %s: %w", tlvs[i], err)
 		}
 
 		if err := validateTag(tag); err != nil {
-			return nil, fmt.Errorf("validating tag %s: %v", tlvs[i].Tag, err)
+			return nil, fmt.Errorf("validating tag %s: %w", tlvs[i].Tag, err)
 		}
 
 		// if it's a composite, encode the TLVs recursively
 
 		var value []byte
 		if len(tlvs[i].TLVs) > 0 {
-			// fifth bi should be set to 1 for constructed (composite) tags
-			constructed := (tag[0] & 0x20) == 0x20
-			if !constructed {
+			if !isConstructed(tag) {
 				return nil, fmt.Errorf("tag %s is not constructed/composite", tlvs[i].Tag)
 			}
 
 			// encode the composite
 			encodedComposite, err := Encode(tlvs[i].TLVs)
 			if err != nil {
-				return nil, fmt.Errorf("encoding composite %s: %v", tlvs[i], err)
+				return nil, fmt.Errorf("encoding composite %s: %w", tlvs[i], err)
 			}
 
 			value = encodedComposite
@@ -69,6 +63,38 @@ func Encode(tlvs []TLV) ([]byte, error) {
 }
 
 func Decode(data []byte) ([]TLV, error) {
+	// var tlvs []TLV
+
+	// for len(data) > 0 {
+	// 	// read the tag
+	// 	tag, read, err := decodeTag(data)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("reading tag: %w", err)
+	// 	}
+
+	// 	// read the length
+	// 	length, read, err := decodeLength(data[read:])
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("reading length: %w", err)
+	// 	}
+
+	// 	// read the value
+	// 	value := data[read : read+length]
+
+	// 	// if it's a composite, decode the TLVs recursively
+	// 	if isConstructed(tag) {
+	// 		decoded, err := Decode(value)
+	// 		if err != nil {
+	// 			return nil, fmt.Errorf("decoding composite: %w", err)
+	// 		}
+
+	// 		tlvs = append(tlvs, TLV{Tag: hex.EncodeToString(tag), TLVs: decoded})
+	// 	} else {
+	// 		tlvs = append(tlvs, TLV{Tag: hex.EncodeToString(tag), Value: value})
+	// 	}
+	// }
+
+	// return nil, nil
 	return nil, nil
 }
 
@@ -98,22 +124,18 @@ func validateTag(tag []byte) error {
 		return errors.New("tag cannot be empty")
 	}
 
-	// Determine if it's a multi-byte tag based on the first byte
-	isMultiByte := tag[0]&0x1F == 0x1F
-	if isMultiByte && len(tag) == 1 {
-		return errors.New("multi-byte tag is incomplete; additional bytes are required")
-	}
+	if !isMultiByte(tag) {
+		if len(tag) > 1 {
+			return errors.New("invalid tag format: single-byte tag should not have additional bytes")
+		}
 
-	// Single-byte tags should not have additional bytes
-	if !isMultiByte && len(tag) > 1 {
-		return errors.New("invalid single-byte tag: additional bytes are not allowed")
-	}
-
-	if !isMultiByte && len(tag) == 1 {
 		return nil // Single-byte tag is valid
 	}
 
-	// check multi-byte tag
+	// Multi-byte tag
+	if len(tag) < 2 {
+		return errors.New("multi-byte tag is incomplete; additional bytes are required")
+	}
 
 	// Check that the last byte has the MSB unset
 	if tag[len(tag)-1]&0x80 != 0 {
@@ -127,5 +149,14 @@ func validateTag(tag []byte) error {
 		}
 	}
 
-	return nil // Tag is valid
+	return nil
+}
+
+func isMultiByte(tag []byte) bool {
+	return tag[0]&0x1F == 0x1F
+}
+
+// fifth bit should be set to 1 for constructed (composite) tags
+func isConstructed(tag []byte) bool {
+	return tag[0]&0x20 == 0x20
 }
