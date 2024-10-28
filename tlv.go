@@ -105,35 +105,31 @@ func Decode(data []byte) ([]TLV, error) {
 	return tlvs, nil
 }
 
-type ppStack struct {
-	tlvs  []TLV
-	level int
+// PrettyPrint prints the TLVs in a human-readable format.
+func PrettyPrint(tlvs []TLV) {
+	sb := strings.Builder{}
+	prettyPrint(tlvs, &sb, 0)
+	fmt.Print(sb.String())
 }
 
-func PrettyPrint(tlvs []TLV) {
-	stack := []ppStack{{tlvs: tlvs, level: 0}}
+func prettyPrint(tlvs []TLV, sb *strings.Builder, level int) {
+	for _, tlv := range tlvs {
+		indent := strings.Repeat("  ", level)
 
-	for len(stack) > 0 {
-		current := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
+		tagName, found := emvTags[tlv.Tag]
 
-		for _, tlv := range current.tlvs {
-			indent := strings.Repeat("  ", current.level)
+		sb.WriteString(fmt.Sprintf("%s%s", indent, tlv.Tag))
 
-			sbuilder := strings.Builder{}
-			sbuilder.WriteString(fmt.Sprintf("%s%s", indent, tlv.Tag))
-
-			if len(tlv.TLVs) > 0 {
-				stack = append(stack, ppStack{tlvs: tlv.TLVs, level: current.level + 1})
-			} else {
-				sbuilder.WriteString(fmt.Sprintf(" %X", tlv.Value))
+		if len(tlv.TLVs) > 0 {
+			if found {
+				sb.WriteString(fmt.Sprintf(" - %s\n", tagName))
 			}
-
-			if tagName, found := emvTags[tlv.Tag]; found {
-				sbuilder.WriteString(fmt.Sprintf(" - %s", tagName))
+			prettyPrint(tlv.TLVs, sb, level+1)
+		} else {
+			sb.WriteString(fmt.Sprintf(" %X", tlv.Value))
+			if found {
+				sb.WriteString(fmt.Sprintf(" - %s\n", tagName))
 			}
-
-			fmt.Println(sbuilder.String())
 		}
 	}
 }
