@@ -120,12 +120,20 @@ func PrettyPrint(tlvs []TLV) {
 		for _, tlv := range current.tlvs {
 			indent := strings.Repeat("  ", current.level)
 
+			sbuilder := strings.Builder{}
+			sbuilder.WriteString(fmt.Sprintf("%s%s", indent, tlv.Tag))
+
 			if len(tlv.TLVs) > 0 {
-				fmt.Printf("%s%s\n", indent, tlv.Tag)
 				stack = append(stack, ppStack{tlvs: tlv.TLVs, level: current.level + 1})
 			} else {
-				fmt.Printf("%s%s %X\n", indent, tlv.Tag, tlv.Value)
+				sbuilder.WriteString(fmt.Sprintf(" %X", tlv.Value))
 			}
+
+			if tagName, found := emvTags[tlv.Tag]; found {
+				sbuilder.WriteString(fmt.Sprintf(" - %s", tagName))
+			}
+
+			fmt.Println(sbuilder.String())
 		}
 	}
 }
