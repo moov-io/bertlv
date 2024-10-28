@@ -40,7 +40,7 @@ func TestEncodeDecode(t *testing.T) {
 }
 
 func TestFindTag(t *testing.T) {
-	_, found := bertlv.FindTag([]bertlv.TLV{}, "00")
+	_, found := bertlv.FindTagByPath([]bertlv.TLV{}, "00")
 	require.False(t, found)
 
 	data := []bertlv.TLV{
@@ -58,10 +58,14 @@ func TestFindTag(t *testing.T) {
 		),
 	}
 
-	_, found = bertlv.FindTag(data, "6F")
+	_, found = bertlv.FindTagByPath(data, "6F")
 	require.True(t, found)
 
-	tag, found := bertlv.FindTag(data, "6F.A5.BF0C.61.4F")
+	tag, found := bertlv.FindTagByPath(data, "6F.A5.BF0C.61.4F")
+	require.True(t, found)
+	require.Equal(t, []byte{0xA0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10}, tag.Value)
+
+	_, found = bertlv.FindFirstTag(data, "4F")
 	require.True(t, found)
 	require.Equal(t, []byte{0xA0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10}, tag.Value)
 }

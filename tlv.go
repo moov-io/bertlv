@@ -246,7 +246,8 @@ func decodeLength(data []byte) (int, int, error) {
 	return length, lengthBytes + 1, nil
 }
 
-func FindTag(tlvs []TLV, path string) (TLV, bool) {
+// FindTagByPath returns the TLV with the specified path.
+func FindTagByPath(tlvs []TLV, path string) (TLV, bool) {
 	tag, path, _ := strings.Cut(path, ".")
 
 	for _, tlv := range tlvs {
@@ -256,8 +257,24 @@ func FindTag(tlvs []TLV, path string) (TLV, bool) {
 			}
 
 			if len(tlv.TLVs) > 0 {
-				return FindTag(tlv.TLVs, path)
+				return FindTagByPath(tlv.TLVs, path)
 			}
+		}
+	}
+
+	return TLV{}, false
+}
+
+// FindFirstTag returns the first TLV with the specified tag. It searches
+// recursively.
+func FindFirstTag(tlvs []TLV, tag string) (TLV, bool) {
+	for _, tlv := range tlvs {
+		if tlv.Tag == tag {
+			return tlv, true
+		}
+
+		if len(tlv.TLVs) > 0 {
+			return FindFirstTag(tlv.TLVs, tag)
 		}
 	}
 
