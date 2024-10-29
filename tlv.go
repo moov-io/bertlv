@@ -124,9 +124,18 @@ func prettyPrint(tlvs []TLV, sb *strings.Builder, level int) {
 			if found {
 				sb.WriteString(fmt.Sprintf(" - %s\n", tagName))
 			}
+
 			prettyPrint(tlv.TLVs, sb, level+1)
 		} else {
-			sb.WriteString(fmt.Sprintf(" %X", tlv.Value))
+			fmt.Printf("looking for a tag %s", tlv.Tag)
+			if filter, ok := tagFilters[tlv.Tag]; ok {
+				fmt.Printf("found a filter for tag %s", tlv.Tag)
+				sb.WriteString(fmt.Sprintf(" %s", filter(tlv.Value)))
+			} else {
+				fmt.Printf("no filter for tag %s", tlv.Tag)
+				sb.WriteString(fmt.Sprintf(" %X", tlv.Value))
+			}
+
 			if found {
 				sb.WriteString(fmt.Sprintf(" - %s\n", tagName))
 			}
