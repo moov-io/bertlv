@@ -142,7 +142,7 @@ func prettyPrint(tlvs []TLV, sb *strings.Builder, level int) {
 
 // Short Form (Length < 128 bytes) - The first byte is the length of the value
 // field, and the value field follows immediately.
-// Long Form (Length >= 128 bytes) - The first byte is 0x80 plus the number of
+// Long Form (Length >= 128 bytes) - The first byte is 0b1000_0000 plus the number of
 // bytes used to encode the length of the value field
 func encodeLength(length int) []byte {
 	if length < 128 {
@@ -158,7 +158,7 @@ func encodeLength(length int) []byte {
 		length >>= 8 // discard the last byte
 	}
 
-	return append([]byte{byte(0x80 | len(lengthBytes))}, lengthBytes...)
+	return append([]byte{byte(0b1000_0000 | len(lengthBytes))}, lengthBytes...)
 }
 
 func validateTag(tag []byte) error {
@@ -179,14 +179,14 @@ func validateTag(tag []byte) error {
 		return errors.New("multi-byte tag is incomplete; additional bytes are required")
 	}
 
-	// Check that the last byte has the MSB unset
-	if tag[len(tag)-1]&0x80 != 0 {
+	// MSB of the last tag should not be set
+	if tag[len(tag)-1]&0b1000_0000 == 0b1000_0000 {
 		return errors.New("invalid tag format: last byte must not have MSB set")
 	}
 
-	// Check that each byte except the last has the MSB set
-	for i := 0; i < len(tag)-1; i++ {
-		if tag[i]&0x80 == 0 {
+	// each byte starting from the 2nd except the last should have MSB set
+	for i := 1; i < len(tag)-1; i++ {
+		if tag[i]&0b1000_0000 != 0b1000_0000 {
 			return fmt.Errorf("invalid tag format: byte %d should have MSB set", i)
 		}
 	}
@@ -194,13 +194,14 @@ func validateTag(tag []byte) error {
 	return nil
 }
 
+// if bits 1 - 5 are set
 func isMultiByte(tag []byte) bool {
-	return tag[0]&0x1F == 0x1F
+	return tag[0]&0b0001_1111 == 0b0001_1111
 }
 
 // fifth bit should be set to 1 for constructed (composite) tags
 func isConstructed(tag []byte) bool {
-	return tag[0]&0x20 == 0x20
+	return tag[0]&0b0010_0000 == 0b0010_0000
 }
 
 func decodeTag(data []byte) ([]byte, int, error) {
@@ -213,10 +214,9 @@ func decodeTag(data []byte) ([]byte, int, error) {
 		return data[:1], 1, nil
 	}
 
-	// multi-byte tag
-	// read until the last byte has the MSB unset
+	// read multi byte tag, last byte of the tag has no MSB set
 	for i := 1; i < len(data); i++ {
-		if data[i]&0x80 == 0 {
+		if data[i]&0b1000_0000 != 0b1000_0000 {
 			return data[:i+1], i + 1, nil
 		}
 	}
@@ -235,7 +235,7 @@ func decodeLength(data []byte) (int, int, error) {
 	}
 
 	// long form
-	lengthBytes := int(data[0] & 0x7F)
+	lengthBytes := int(data[0] & 0b0111_1111)
 	if len(data) < lengthBytes+1 {
 		return 0, 0, errors.New("length is incomplete")
 	}
