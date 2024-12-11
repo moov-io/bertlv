@@ -128,7 +128,7 @@ func prettyPrint(tlvs []TLV, sb *strings.Builder, level int) {
 			prettyPrint(tlv.TLVs, sb, level+1)
 		} else {
 			if filter, ok := tagFilters[tlv.Tag]; ok {
-				sb.WriteString(fmt.Sprintf(" %s", filter(tlv.Value)))
+				sb.WriteString(" " + filter(tlv.Value))
 			} else {
 				sb.WriteString(fmt.Sprintf(" %X", tlv.Value))
 			}
