@@ -109,7 +109,7 @@ func Decode(data []byte) ([]TLV, error) {
 func PrettyPrint(tlvs []TLV) {
 	sb := strings.Builder{}
 	prettyPrint(tlvs, &sb, 0)
-	fmt.Print(sb.String())
+	fmt.Print(sb.String()) //nolint:forbidigo
 }
 
 func prettyPrint(tlvs []TLV, sb *strings.Builder, level int) {
