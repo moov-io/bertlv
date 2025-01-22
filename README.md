@@ -5,6 +5,7 @@
 ## Features
 
 - Encode and decode BER-TLV data structures.
+- Unmarshal BER-TLV data into Go structs
 - Support for both simple and composite TLV tags.
 - Easy pretty-printing of decoded TLV structures for debugging and analysis.
 
@@ -75,6 +76,7 @@ func TestEncodeDecode(t *testing.T) {
 - **Decode**: The `bertlv.Decode` decodes a binary value back into a TLV objects.
 - **FindTag**: The `bertlv.FindTag` returns the first TLV object matching the specified path (e.g., "6F.A5.BF0C.61.50").
 - **PrettyPrint**: The `bertlv.PrettyPrint` visaulizes the TLV structure in a readable format.
+- **Unmarshal**: The `bertlv.Unmarshal` converts TLV objects into a Go struct using struct tags.
 
 ### TLV Creation
 You can create TLV objects using the following helper functions (preferred way):
@@ -100,6 +102,24 @@ Also, you can create TLV objects directly using the `bertlv.TLV` struct (less pr
 		}},
 	}
 ```
+
+### Unmarshaling to structs
+
+The `bertlv.Unmarshal` function allows you to unmarshal TLV data directly into Go structs using struct tags. Fields can be mapped to TLV tags using the `bertlv` struct tag:
+
+```go
+type EMVData struct {
+    DedicatedFileName   []byte `bertlv:"84"`
+    ApplicationTemplate struct {
+        ApplicationID                string `bertlv:"4F"`       // Will be converted to HEX string
+        ApplicationLabel             string `bertlv:"50,ascii"` // Will be converted to ASCII string
+        ApplicationPriorityIndicator []byte `bertlv:"87"`
+    } `bertlv:"61"`
+}
+
+data := []bertlv.TLV{...} // Your TLV data
+var emvData EMVData
+err := bertlv.Unmarshal(data, &emvData)
 
 ## Contribution
 
