@@ -4,6 +4,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"reflect"
+	"slices"
 	"strings"
 )
 
@@ -281,4 +283,82 @@ func FindFirstTag(tlvs []TLV, tag string) (TLV, bool) {
 	}
 
 	return TLV{}, false
+}
+
+type fieldTag struct {
+	name    string
+	options []string
+}
+
+func (v fieldTag) HasOption(option string) bool {
+	return slices.Contains(v.options, option)
+}
+
+func newFieldTag(s string) fieldTag {
+	splits := strings.Split(s, ",")
+
+	return fieldTag{
+		name:    splits[0],
+		options: splits[0:],
+	}
+}
+
+func Unmarshal(tlvs []TLV, s any) error {
+	// let's create map for lookup
+	tagToValue := make(map[string]TLV)
+	for _, tlv := range tlvs {
+		tagToValue[tlv.Tag] = tlv
+	}
+
+	v := reflect.ValueOf(s)
+	if v.Kind() != reflect.Pointer || v.IsNil() {
+		return fmt.Errorf("%T is not a pointer or nil", s)
+	}
+
+	v = v.Elem()
+
+	if v.Kind() != reflect.Struct {
+		return fmt.Errorf("%T is not a struct, but", v.Kind())
+	}
+
+	t := v.Type()
+
+	for i := 0; i < t.NumField(); i++ {
+		typeField := t.Field(i)
+
+		tag := newFieldTag(typeField.Tag.Get("bertlv"))
+		if tag.name == "" {
+			continue
+		}
+
+		tlv, ok := tagToValue[tag.name]
+		if !ok {
+			continue
+		}
+
+		valField := v.Field(i)
+
+		if typeField.Type.Kind() == reflect.Struct {
+			if err := Unmarshal(tlv.TLVs, valField.Addr().Interface()); err != nil {
+				return fmt.Errorf("unmarshalling nested field %s: %w", typeField.Name, err)
+			}
+
+			continue
+		}
+
+		switch {
+		case typeField.Type.Kind() == reflect.Slice && typeField.Type.Elem().Kind() == reflect.Uint8:
+			valField.Set(reflect.ValueOf(tlv.Value))
+		case typeField.Type.Kind() == reflect.String:
+			var str string
+			if tag.HasOption("ascii") {
+				str = string(tlv.Value)
+			} else {
+				str = strings.ToUpper(hex.EncodeToString(tlv.Value))
+			}
+			valField.SetString(str)
+		}
+	}
+
+	return nil
 }
