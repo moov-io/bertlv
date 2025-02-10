@@ -65,7 +65,7 @@ func TestEncodeDecode(t *testing.T) {
     bertlv.PrettyPrint(decoded)
 
     // Find a specific tag
-    tag, found := bertlv.FindTag(decoded, "6F.A5.BF0C.61.50")
+    tag, found := bertlv.FindFirstTag(decoded, "6F.A5.BF0C.61.50")
     require.True(t, found)
     require.Equal(t, []byte{0x4D, 0x61, 0x73, 0x74, 0x65, 0x72, 0x63, 0x61, 0x72, 0x64}, tag.Value)
 }
@@ -74,7 +74,8 @@ func TestEncodeDecode(t *testing.T) {
 ### Functions
 - **Encode**: The `bertlv.Encode` encodes TLV objects into a binary format.
 - **Decode**: The `bertlv.Decode` decodes a binary value back into a TLV objects.
-- **FindTag**: The `bertlv.FindTag` returns the first TLV object matching the specified path (e.g., "6F.A5.BF0C.61.50").
+- **FindTagByPath**: The `bertlv.FindTagByPath` returns the first TLV object matching the specified path (e.g., "6F.A5.BF0C.61.50").
+- - **FindFirstTag**: The `bertlv.FindFirstTag` returns the first TLV object matching the specified name (e.g., "A5"). It searches recursively.
 - **PrettyPrint**: The `bertlv.PrettyPrint` visaulizes the TLV structure in a readable format.
 - **Unmarshal**: The `bertlv.Unmarshal` converts TLV objects into a Go struct using struct tags.
 
