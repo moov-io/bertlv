@@ -120,6 +120,7 @@ type EMVData struct {
 data := []bertlv.TLV{...} // Your TLV data
 var emvData EMVData
 err := bertlv.Unmarshal(data, &emvData)
+```
 
 ## Contribution
 
