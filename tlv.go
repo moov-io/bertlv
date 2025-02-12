@@ -359,10 +359,16 @@ func Unmarshal(tlvs []TLV, s any) error {
 			}
 			valField.SetString(str)
 		case typeField.Type.Kind() == reflect.Int64:
-			hexStr := strings.ToUpper(hex.EncodeToString(tlv.Value))
-			intVal, err := strconv.ParseInt(hexStr, 16, 64)
+			var intVal int64
+			var err error
+			if tag.HasOption("ascii") {
+				intVal, err = strconv.ParseInt(string(tlv.Value), 10, 64)
+			} else {
+				hexStr := strings.ToUpper(hex.EncodeToString(tlv.Value))
+				intVal, err = strconv.ParseInt(hexStr, 10, 64)
+			}
 			if err != nil {
-				return fmt.Errorf("parsing hex to int64 for field %s: %w", typeField.Name, err)
+				return fmt.Errorf("parsing int64 for field %s: %w", typeField.Name, err)
 			}
 			valField.SetInt(intVal)
 		}
