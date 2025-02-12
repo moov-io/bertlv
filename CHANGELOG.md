@@ -1,3 +1,9 @@
+## v0.0.5 (Released 2025-02-12)
+
+IMPROVEMENTS
+
+- Supports Unmarshaling into int64 base10
+
 ## v0.0.4 (Released 2025-02-11)
 
 IMPROVEMENTS
