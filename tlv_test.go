@@ -78,6 +78,7 @@ func TestUnmarshalSuccess(t *testing.T) {
 			bertlv.NewTag("50", []byte{0x4D, 0x61, 0x73, 0x74, 0x65, 0x72, 0x63, 0x61, 0x72, 0x64}),
 			bertlv.NewTag("87", []byte{0x01}), // Application Priority Indicator
 		),
+		bertlv.NewTag("9F02", []byte{0x00, 0x00, 0x00, 0x00, 0x12, 0x34}), // Amount, Authorised (Numeric)
 	}
 
 	type EMVData struct {
@@ -87,6 +88,7 @@ func TestUnmarshalSuccess(t *testing.T) {
 			ApplicationLabel             string `bertlv:"50,ascii"`
 			ApplicationPriorityIndicator []byte `bertlv:"87"`
 		} `bertlv:"61"`
+		AmountAuthorized int64 `bertlv:"9F02"`
 	}
 
 	emvData := &EMVData{}
@@ -98,6 +100,7 @@ func TestUnmarshalSuccess(t *testing.T) {
 	require.Equal(t, "A0000000041010", emvData.ApplicationTemplate.ApplicationID)
 	require.Equal(t, "Mastercard", emvData.ApplicationTemplate.ApplicationLabel)
 	require.Equal(t, []byte{0x01}, emvData.ApplicationTemplate.ApplicationPriorityIndicator)
+	require.Equal(t, int64(0x1234), emvData.AmountAuthorized)
 }
 
 func TestUnmarshalEdgeCases(t *testing.T) {

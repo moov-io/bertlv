@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -357,6 +358,13 @@ func Unmarshal(tlvs []TLV, s any) error {
 				str = strings.ToUpper(hex.EncodeToString(tlv.Value))
 			}
 			valField.SetString(str)
+		case typeField.Type.Kind() == reflect.Int64:
+			hexStr := strings.ToUpper(hex.EncodeToString(tlv.Value))
+			intVal, err := strconv.ParseInt(hexStr, 16, 64)
+			if err != nil {
+				return fmt.Errorf("parsing hex to int64 for field %s: %w", typeField.Name, err)
+			}
+			valField.SetInt(intVal)
 		}
 	}
 
