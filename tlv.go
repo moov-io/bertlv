@@ -77,10 +77,17 @@ func Decode(data []byte) ([]TLV, error) {
 		}
 		data = data[read:]
 
+		// Before, between, or after TLV-coded data objects, '00' bytes
+		// without any meaning may occur (for example, due to erased
+		// or modified TLV-coded data objects). Ignore them.
+		if tag[0] == 0x00 {
+			continue
+		}
+
 		// read the length
 		length, read, err := decodeLength(data)
 		if err != nil {
-			return nil, fmt.Errorf("reading length: %w", err)
+			return nil, fmt.Errorf("reading length for tag %X: %w", tag, err)
 		}
 		data = data[read:]
 
@@ -133,7 +140,11 @@ func prettyPrint(tlvs []TLV, sb *strings.Builder, level int) {
 			if filter, ok := tagFilters[tlv.Tag]; ok {
 				sb.WriteString(" " + filter(tlv.Value))
 			} else {
-				sb.WriteString(fmt.Sprintf(" %X", tlv.Value))
+				if len(tlv.Value) > 0 {
+					sb.WriteString(fmt.Sprintf(" %X", tlv.Value))
+				} else {
+					sb.WriteString(" (empty)")
+				}
 			}
 
 			if found {
