@@ -98,9 +98,9 @@ func Decode(data []byte) ([]TLV, error) {
 		value := data[:length]
 		data = data[length:]
 
-		// if it's a composite, decode the TLVs recursively
 		hexTag := strings.ToUpper(hex.EncodeToString(tag))
 
+		// if it's a composite, decode the TLVs recursively
 		if isConstructed(tag) {
 			decoded, err := Decode(value)
 			if err != nil {
@@ -149,6 +149,8 @@ func prettyPrint(tlvs []TLV, sb *strings.Builder, level int) {
 
 			if found {
 				sb.WriteString(fmt.Sprintf(" - %s\n", tagName))
+			} else {
+				sb.WriteString("\n")
 			}
 		}
 	}
