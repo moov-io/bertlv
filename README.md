@@ -8,6 +8,7 @@
 - Unmarshal BER-TLV data into Go structs
 - Support for both simple and composite TLV tags.
 - Easy pretty-printing of decoded TLV structures for debugging and analysis.
+- Selective copying of TLV data by tag names.
 
 ## Installation
 
@@ -75,9 +76,10 @@ func TestEncodeDecode(t *testing.T) {
 - **Encode**: The `bertlv.Encode` encodes TLV objects into a binary format.
 - **Decode**: The `bertlv.Decode` decodes a binary value back into a TLV objects.
 - **FindTagByPath**: The `bertlv.FindTagByPath` returns the first TLV object matching the specified path (e.g., "6F.A5.BF0C.61.50").
-- - **FindFirstTag**: The `bertlv.FindFirstTag` returns the first TLV object matching the specified name (e.g., "A5"). It searches recursively.
+- **FindFirstTag**: The `bertlv.FindFirstTag` returns the first TLV object matching the specified name (e.g., "A5"). It searches recursively.
 - **PrettyPrint**: The `bertlv.PrettyPrint` visaulizes the TLV structure in a readable format.
 - **Unmarshal**: The `bertlv.Unmarshal` converts TLV objects into a Go struct using struct tags.
+- **CopyTags**: The `bertlv.CopyTags` creates a deep copy of TLVs containing only the specified tags.
 
 ### TLV Creation
 You can create TLV objects using the following helper functions (preferred way):
@@ -121,6 +123,26 @@ type EMVData struct {
 data := []bertlv.TLV{...} // Your TLV data
 var emvData EMVData
 err := bertlv.Unmarshal(data, &emvData)
+```
+
+### Creating filtered copies of TLV data
+
+The `bertlv.CopyTags` function allows you to create a deep copy of a TLV slice containing only the specified tags. Only top level tags are copied, and if a tag is a composite tag, its entire subtree is copied.
+
+```go
+// Original TLV data containing sensitive information
+originalData := []bertlv.TLV{
+    bertlv.NewTag("9F02", []byte{0x00, 0x00, 0x00, 0x01, 0x23, 0x45}), // Amount
+    bertlv.NewTag("5A", []byte{0x41, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77}), // PAN (sensitive)
+    bertlv.NewTag("57", []byte{0x41, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0xD2, 0x30, 0x12}), // Track2 (sensitive)
+    bertlv.NewTag("9F1A", []byte{0x08, 0x40}), // Terminal Country Code
+}
+
+// Create a copy with only non-sensitive tags
+safeData := bertlv.CopyTags(originalData, "9F02", "9F1A")
+
+// safeData now contains only the Amount and Terminal Country Code
+// Original data remains unchanged
 ```
 
 ## Contribution
