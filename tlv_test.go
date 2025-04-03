@@ -143,8 +143,7 @@ func TestUnmarshalEdgeCases(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestCreateTagsCopy(t *testing.T) {
-	// Test cases
+func TestCopyTags(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    []bertlv.TLV
@@ -238,7 +237,7 @@ func TestCreateTagsCopy(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			result := bertlv.CreateTagsCopy(tc.input, tc.tags...)
+			result := bertlv.CopyTags(tc.input, tc.tags...)
 
 			require.Equal(t, tc.expected, result)
 
@@ -256,8 +255,7 @@ func TestCreateTagsCopy(t *testing.T) {
 	}
 }
 
-func BenchmarkCreateTagsCopy(b *testing.B) {
-	// Create a complex TLV structure for benchmarking
+func BenchmarkCopyTags(b *testing.B) {
 	input := []bertlv.TLV{
 		bertlv.NewComposite("6F", // File Control Information (FCI) Template
 			bertlv.NewTag("84", []byte{0x32, 0x50, 0x41, 0x59, 0x2E, 0x53, 0x59, 0x53, 0x2E, 0x44, 0x44, 0x46, 0x30, 0x31}),
@@ -282,7 +280,6 @@ func BenchmarkCreateTagsCopy(b *testing.B) {
 		bertlv.NewTag("9F36", []byte{0x00, 0x01}),
 	}
 
-	// Define different benchmark scenarios
 	benchmarks := []struct {
 		name    string
 		tags    []string
@@ -326,7 +323,7 @@ func BenchmarkCreateTagsCopy(b *testing.B) {
 			b.ResetTimer()
 
 			for i := 0; i < b.N; i++ {
-				result := bertlv.CreateTagsCopy(input, bm.tags...)
+				result := bertlv.CopyTags(input, bm.tags...)
 				// Force compiler to evaluate result to prevent optimization
 				if len(result) > 100000 {
 					b.Fatalf("unexpected result length")

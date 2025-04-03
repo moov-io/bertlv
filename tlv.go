@@ -390,10 +390,10 @@ func Unmarshal(tlvs []TLV, s any) error {
 	return nil
 }
 
-// CreateTagsCopy creates a new slice containing only TLVs with the specified tags.
+// CopyTags creates a new slice containing only TLVs with the specified tags.
 // It performs a deep copy of the matching TLVs, ensuring the original data is not modified.
 // When a parent TLV is included in the tags list, its entire subtree is copied.
-func CreateTagsCopy(tlvs []TLV, tags ...string) []TLV {
+func CopyTags(tlvs []TLV, tags ...string) []TLV {
 	if len(tlvs) == 0 || len(tags) == 0 {
 		return nil
 	}

@@ -79,7 +79,7 @@ func TestEncodeDecode(t *testing.T) {
 - **FindFirstTag**: The `bertlv.FindFirstTag` returns the first TLV object matching the specified name (e.g., "A5"). It searches recursively.
 - **PrettyPrint**: The `bertlv.PrettyPrint` visaulizes the TLV structure in a readable format.
 - **Unmarshal**: The `bertlv.Unmarshal` converts TLV objects into a Go struct using struct tags.
-- **CreateTagsCopy**: The `bertlv.CreateTagsCopy` creates a deep copy of TLVs containing only the specified tags.
+- **CopyTags**: The `bertlv.CopyTags` creates a deep copy of TLVs containing only the specified tags.
 
 ### TLV Creation
 You can create TLV objects using the following helper functions (preferred way):
@@ -127,7 +127,7 @@ err := bertlv.Unmarshal(data, &emvData)
 
 ### Creating filtered copies of TLV data
 
-The `bertlv.CreateTagsCopy` function allows you to create a deep copy of a TLV slice containing only the specified tags. Only top level tags are copied, and if a tag is a composite tag, its entire subtree is copied.
+The `bertlv.CopyTags` function allows you to create a deep copy of a TLV slice containing only the specified tags. Only top level tags are copied, and if a tag is a composite tag, its entire subtree is copied.
 
 ```go
 // Original TLV data containing sensitive information
@@ -139,7 +139,7 @@ originalData := []bertlv.TLV{
 }
 
 // Create a copy with only non-sensitive tags
-safeData := bertlv.CreateTagsCopy(originalData, "9F02", "9F1A")
+safeData := bertlv.CopyTags(originalData, "9F02", "9F1A")
 
 // safeData now contains only the Amount and Terminal Country Code
 // Original data remains unchanged
