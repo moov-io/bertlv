@@ -144,3 +144,116 @@ func TestUnmarshalEdgeCases(t *testing.T) {
 	err = bertlv.Unmarshal(data, nilPtr)
 	require.Error(t, err)
 }
+
+func TestCreateTagsCopy(t *testing.T) {
+	// Test cases
+	tests := []struct {
+		name     string
+		input    []bertlv.TLV
+		tags     []string
+		expected []bertlv.TLV
+	}{
+		{
+			name:     "Empty input",
+			input:    []bertlv.TLV{},
+			tags:     []string{"9F02"},
+			expected: nil,
+		},
+		{
+			name: "Single flat tag match",
+			input: []bertlv.TLV{
+				bertlv.NewTag("9F02", []byte{0x00, 0x00, 0x00, 0x01, 0x23, 0x45}),
+				bertlv.NewTag("5A", []byte{0x41, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77}),
+			},
+			tags: []string{"9F02"},
+			expected: []bertlv.TLV{
+				bertlv.NewTag("9F02", []byte{0x00, 0x00, 0x00, 0x01, 0x23, 0x45}),
+			},
+		},
+		{
+			name: "Multiple flat tag matches",
+			input: []bertlv.TLV{
+				bertlv.NewTag("9F02", []byte{0x00, 0x00, 0x00, 0x01, 0x23, 0x45}),
+				bertlv.NewTag("5A", []byte{0x41, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77}),
+				bertlv.NewTag("57", []byte{0x41, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0xD2, 0x30, 0x12}),
+			},
+			tags: []string{"9F02", "57"},
+			expected: []bertlv.TLV{
+				bertlv.NewTag("9F02", []byte{0x00, 0x00, 0x00, 0x01, 0x23, 0x45}),
+				bertlv.NewTag("57", []byte{0x41, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0xD2, 0x30, 0x12}),
+			},
+		},
+		{
+			name: "No matches",
+			input: []bertlv.TLV{
+				bertlv.NewTag("9F02", []byte{0x00, 0x00, 0x00, 0x01, 0x23, 0x45}),
+				bertlv.NewTag("5A", []byte{0x41, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77}),
+			},
+			tags:     []string{"9F03", "9F06"},
+			expected: nil,
+		},
+		{
+			name: "Nested structures - parent tag match",
+			input: []bertlv.TLV{
+				bertlv.NewComposite("6F", // File Control Information (FCI) Template
+					bertlv.NewTag("84", []byte{0x32, 0x50, 0x41, 0x59, 0x2E, 0x53, 0x59, 0x53, 0x2E, 0x44, 0x44, 0x46, 0x30, 0x31}),
+					bertlv.NewComposite("A5", // FCI Proprietary Template
+						bertlv.NewTag("50", []byte{0x4D, 0x61, 0x73, 0x74, 0x65, 0x72, 0x63, 0x61, 0x72, 0x64}),
+					),
+				),
+				bertlv.NewTag("9F02", []byte{0x00, 0x00, 0x00, 0x01, 0x23, 0x45}),
+			},
+			tags: []string{"6F"},
+			expected: []bertlv.TLV{
+				bertlv.NewComposite("6F", // File Control Information (FCI) Template
+					bertlv.NewTag("84", []byte{0x32, 0x50, 0x41, 0x59, 0x2E, 0x53, 0x59, 0x53, 0x2E, 0x44, 0x44, 0x46, 0x30, 0x31}),
+					bertlv.NewComposite("A5", // FCI Proprietary Template
+						bertlv.NewTag("50", []byte{0x4D, 0x61, 0x73, 0x74, 0x65, 0x72, 0x63, 0x61, 0x72, 0x64}),
+					),
+				),
+			},
+		},
+		{
+			name: "Multiple nested and flat matches",
+			input: []bertlv.TLV{
+				bertlv.NewComposite("6F", // File Control Information (FCI) Template
+					bertlv.NewTag("84", []byte{0x32, 0x50, 0x41, 0x59, 0x2E, 0x53, 0x59, 0x53, 0x2E, 0x44, 0x44, 0x46, 0x30, 0x31}),
+					bertlv.NewComposite("A5", // FCI Proprietary Template
+						bertlv.NewTag("50", []byte{0x4D, 0x61, 0x73, 0x74, 0x65, 0x72, 0x63, 0x61, 0x72, 0x64}),
+					),
+				),
+				bertlv.NewTag("9F02", []byte{0x00, 0x00, 0x00, 0x01, 0x23, 0x45}),
+				bertlv.NewTag("5A", []byte{0x41, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77}),
+			},
+			tags: []string{"6F", "9F02"},
+			expected: []bertlv.TLV{
+				bertlv.NewComposite("6F", // File Control Information (FCI) Template
+					bertlv.NewTag("84", []byte{0x32, 0x50, 0x41, 0x59, 0x2E, 0x53, 0x59, 0x53, 0x2E, 0x44, 0x44, 0x46, 0x30, 0x31}),
+					bertlv.NewComposite("A5", // FCI Proprietary Template
+						bertlv.NewTag("50", []byte{0x4D, 0x61, 0x73, 0x74, 0x65, 0x72, 0x63, 0x61, 0x72, 0x64}),
+					),
+				),
+				bertlv.NewTag("9F02", []byte{0x00, 0x00, 0x00, 0x01, 0x23, 0x45}),
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := bertlv.CreateTagsCopy(tc.input, tc.tags...)
+
+			require.Equal(t, tc.expected, result)
+
+			// Verify it's a deep copy by modifying the original
+			if len(tc.input) > 0 && len(tc.input[0].Value) > 0 {
+				// Modify first tag's value in original
+				tc.input[0].Value[0] = 0xFF
+
+				// Result should remain unchanged
+				if len(result) > 0 && len(result[0].Value) > 0 && result[0].Tag == tc.input[0].Tag {
+					require.NotEqual(t, tc.input[0].Value[0], result[0].Value[0])
+				}
+			}
+		})
+	}
+}

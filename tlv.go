@@ -389,3 +389,77 @@ func Unmarshal(tlvs []TLV, s any) error {
 
 	return nil
 }
+
+// CreateTagsCopy creates a new slice containing only TLVs with the specified tags.
+// It performs a deep copy of the matching TLVs, ensuring the original data is not modified.
+// When a parent TLV is included in the tags list, its entire subtree is copied.
+func CreateTagsCopy(tlvs []TLV, tags ...string) []TLV {
+	if len(tlvs) == 0 || len(tags) == 0 {
+		return nil
+	}
+
+	// Create a map for O(1) lookups of allowed tags
+	tagsToCopy := make(map[string]bool, len(tags))
+	for _, tag := range tags {
+		tagsToCopy[tag] = true
+	}
+
+	// Create a new slice for the result
+	result := make([]TLV, 0, len(tags)) // Pre-allocate for efficiency
+
+	// Filter and copy the TLVs
+	for _, tlv := range tlvs {
+		if tagsToCopy[tlv.Tag] {
+			copiedTLV := TLV{
+				Tag: tlv.Tag,
+			}
+
+			if len(tlv.Value) > 0 {
+				copiedTLV.Value = make([]byte, len(tlv.Value))
+				copy(copiedTLV.Value, tlv.Value)
+			}
+
+			// Deep copy nested TLVs if they exist (entire subtree)
+			if len(tlv.TLVs) > 0 {
+				copiedTLV.TLVs = deepCopyTLVs(tlv.TLVs)
+			}
+
+			result = append(result, copiedTLV)
+		}
+	}
+
+	if len(result) == 0 {
+		return nil
+	}
+
+	return result
+}
+
+// deepCopyTLVs creates a deep copy of a slice of TLVs
+func deepCopyTLVs(tlvs []TLV) []TLV {
+	if len(tlvs) == 0 {
+		return nil
+	}
+
+	result := make([]TLV, 0, len(tlvs))
+	for _, tlv := range tlvs {
+		copiedTLV := TLV{
+			Tag: tlv.Tag,
+		}
+
+		// Deep copy the Value slice if it exists
+		if len(tlv.Value) > 0 {
+			copiedTLV.Value = make([]byte, len(tlv.Value))
+			copy(copiedTLV.Value, tlv.Value)
+		}
+
+		// Recursively copy nested TLVs if they exist
+		if len(tlv.TLVs) > 0 {
+			copiedTLV.TLVs = deepCopyTLVs(tlv.TLVs)
+		}
+
+		result = append(result, copiedTLV)
+	}
+
+	return result
+}
