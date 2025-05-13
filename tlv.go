@@ -311,10 +311,15 @@ func (v fieldTag) HasOption(option string) bool {
 func newFieldTag(s string) fieldTag {
 	splits := strings.Split(s, ",")
 
-	return fieldTag{
-		name:    splits[0],
-		options: splits[0:],
+	ft := fieldTag{
+		name: splits[0],
 	}
+
+	if len(splits) > 1 {
+		ft.options = splits[1:]
+	}
+
+	return ft
 }
 
 func Unmarshal(tlvs []TLV, s any) error {
