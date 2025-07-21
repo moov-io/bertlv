@@ -11,23 +11,28 @@ package bertlv
 //
 // The function recursively flattens nested TLV structures into a single map,
 // providing O(1) lookup time instead of O(n) search time of FindFirstTag.
+// Each tag maps to a slice of all its occurrences, preserving duplicate tags
+// that appear in different constructed TLVs.
 //
 // Usage:
 //   tagMap := BuildTagMap(tlvs)
-//   if tag, found := tagMap["84"]; found {
-//       // Process tag - O(1) operation
+//   if tags, found := tagMap["84"]; found {
+//       // Process tag(s) - O(1) operation
+//       for _, tag := range tags {
+//           // Handle each occurrence
+//       }
 //   }
 //
-// Note: If duplicate tags exist at different nesting levels, the first
-// occurrence encountered during depth-first traversal is stored.
-func BuildTagMap(tlvs []TLV) map[string]TLV {
+// Note: Duplicate tags within constructed TLVs are preserved in the order
+// they are encountered during depth-first traversal.
+func BuildTagMap(tlvs []TLV) map[string][]TLV {
 	if len(tlvs) == 0 {
-		return make(map[string]TLV)
+		return make(map[string][]TLV)
 	}
 	
 	// Estimate map size to reduce reallocations
 	estimatedSize := estimateTagCount(tlvs)
-	tagMap := make(map[string]TLV, estimatedSize)
+	tagMap := make(map[string][]TLV, estimatedSize)
 	
 	// Recursively flatten all tags including nested ones
 	flattenTags(tlvs, tagMap)
@@ -37,12 +42,10 @@ func BuildTagMap(tlvs []TLV) map[string]TLV {
 
 // flattenTags recursively adds all tags from the TLV structure to the map.
 // Uses depth-first traversal to maintain consistent ordering for duplicate tags.
-func flattenTags(tlvs []TLV, tagMap map[string]TLV) {
+func flattenTags(tlvs []TLV, tagMap map[string][]TLV) {
 	for _, tlv := range tlvs {
-		// Only add if tag doesn't already exist (first occurrence wins)
-		if _, exists := tagMap[tlv.Tag]; !exists {
-			tagMap[tlv.Tag] = tlv
-		}
+		// Always append - preserve all instances
+		tagMap[tlv.Tag] = append(tagMap[tlv.Tag], tlv)
 		
 		// Recursively process nested TLVs
 		if len(tlv.TLVs) > 0 {
@@ -66,32 +69,52 @@ func estimateTagCount(tlvs []TLV) int {
 	return count
 }
 
-// FindTagInMap is a convenience function that combines map lookup with
-// the same return signature as FindFirstTag for easy migration.
-func FindTagInMap(tagMap map[string]TLV, tag string) (TLV, bool) {
-	tlv, found := tagMap[tag]
-	return tlv, found
+// FindFirst returns the first occurrence of a tag from the tag map.
+// This is useful when you only need one instance of a tag.
+func FindFirst(tagMap map[string][]TLV, tag string) (TLV, bool) {
+	instances, found := tagMap[tag]
+	if !found || len(instances) == 0 {
+		return TLV{}, false
+	}
+	return instances[0], true
+}
+
+// Find returns all occurrences of a tag from the tag map.
+// This is essential for processing duplicate tags within constructed TLVs,
+// which is common in EMV data where tags like 9F10 appear in multiple templates.
+func Find(tagMap map[string][]TLV, tag string) ([]TLV, bool) {
+	instances, found := tagMap[tag]
+	return instances, found && len(instances) > 0
 }
 
 // TagMapStats provides statistics about a tag map for debugging and optimization.
 type TagMapStats struct {
-	TotalTags    int
-	UniqueTag    int
+	TotalTags      int
+	UniqueTags     int
+	DuplicateTags  int
 	MemoryEstimate int64 // Rough memory usage estimate in bytes
 }
 
 // GetTagMapStats returns statistics about the provided tag map.
-func GetTagMapStats(tagMap map[string]TLV) TagMapStats {
+func GetTagMapStats(tagMap map[string][]TLV) TagMapStats {
 	stats := TagMapStats{
-		TotalTags: len(tagMap),
-		UniqueTag: len(tagMap),
+		UniqueTags: len(tagMap),
 	}
 	
-	// Rough memory estimate (tag string + TLV struct + map overhead)
-	for tag, tlv := range tagMap {
-		stats.MemoryEstimate += int64(len(tag))           // Tag string
-		stats.MemoryEstimate += int64(len(tlv.Value))     // Value bytes
-		stats.MemoryEstimate += 64                        // Struct + map overhead estimate
+	// Count total tags and calculate memory estimate
+	for tag, instances := range tagMap {
+		stats.TotalTags += len(instances)
+		if len(instances) > 1 {
+			stats.DuplicateTags += len(instances) - 1
+		}
+		
+		// Memory estimate
+		stats.MemoryEstimate += int64(len(tag)) * int64(len(instances)) // Tag strings
+		for _, tlv := range instances {
+			stats.MemoryEstimate += int64(len(tlv.Value))     // Value bytes
+			stats.MemoryEstimate += 64                        // Struct overhead estimate
+		}
+		stats.MemoryEstimate += int64(len(instances)) * 8 // Slice overhead
 	}
 	
 	return stats

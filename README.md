@@ -154,7 +154,7 @@ This enhancement adds high-performance tag mapping functionality to the bertlv l
 The existing `FindFirstTag()` function uses recursive depth-first search with O(n) time complexity. For applications like EMV payment processing that need to access multiple tags repeatedly, this creates a performance bottleneck:
 
 ```go
-// Current approach - O(n) for each lookup
+// Traditional approach - O(n) for each lookup
 aid, _ := FindFirstTag(tlvs, "84")      // Search entire structure
 label, _ := FindFirstTag(tlvs, "50")    // Search again from beginning  
 priority, _ := FindFirstTag(tlvs, "87") // Search again...
@@ -162,14 +162,13 @@ priority, _ := FindFirstTag(tlvs, "87") // Search again...
 
 ## Solution: BuildTagMap()
 
-The new `BuildTagMap()` function creates a flattened map of all tags for O(1) lookups:
+The new `BuildTagMap()` function creates a flattened map of all tags for O(1) lookups. **Importantly, it preserves all instances of duplicate tags**, which is essential for EMV processing where the same tag can appear in multiple constructed TLVs:
 
 ```go
 // New approach - O(1) for each lookup after initial O(n) map building
-tagMap := BuildTagMap(tlvs)  // One-time O(n) operation
-aid, _ := tagMap["84"]       // O(1) lookup
-label, _ := tagMap["50"]     // O(1) lookup  
-priority, _ := tagMap["87"]  // O(1) lookup
+tagMap := BuildTagMap(tlvs)           // One-time O(n) operation
+aid, _ := FindFirst(tagMap, "84")    // O(1) lookup - returns first occurrence
+labels, _ := Find(tagMap, "50")      // O(1) lookup - returns all occurrences
 ```
 
 ## Performance Improvements
@@ -191,12 +190,14 @@ Based on benchmarks with realistic EMV TLV structures:
 - Working with small TLV structures (< 10 tags)
 - Memory usage is more critical than speed
 - One-time tag access
+- You don't need to handle duplicate tags
 
 ### Use `BuildTagMap()` when:
 - Looking up 3+ tags from same structure
 - Processing many transactions with similar tag access patterns
 - Performance is critical (EMV payment processing, high-frequency operations)
 - Tags will be accessed multiple times
+- **You need to handle duplicate tags in constructed TLVs** (common in EMV)
 
 ## API Reference
 
@@ -204,21 +205,26 @@ Based on benchmarks with realistic EMV TLV structures:
 
 ```go
 // BuildTagMap creates a flattened map of all tags for O(1) lookups
-func BuildTagMap(tlvs []TLV) map[string]TLV
+// Returns map[string][]TLV to preserve duplicate tags
+func BuildTagMap(tlvs []TLV) map[string][]TLV
 
-// FindTagInMap provides FindFirstTag-compatible interface
-func FindTagInMap(tagMap map[string]TLV, tag string) (TLV, bool)
+// FindFirst returns the first occurrence of a tag (O(1) lookup)
+func FindFirst(tagMap map[string][]TLV, tag string) (TLV, bool)
+
+// Find returns all occurrences of a tag (O(1) lookup)
+func Find(tagMap map[string][]TLV, tag string) ([]TLV, bool)
 
 // GetTagMapStats returns memory and performance statistics
-func GetTagMapStats(tagMap map[string]TLV) TagMapStats
+func GetTagMapStats(tagMap map[string][]TLV) TagMapStats
 ```
 
 ### TagMapStats Structure
 
 ```go
 type TagMapStats struct {
-    TotalTags      int   // Number of tags in map
-    UniqueTag      int   // Number of unique tags
+    TotalTags      int   // Total number of tags (including duplicates)
+    UniqueTags     int   // Number of unique tag values
+    DuplicateTags  int   // Number of duplicate tag instances
     MemoryEstimate int64 // Estimated memory usage in bytes
 }
 ```
@@ -233,9 +239,16 @@ tlvs, _ := Decode(data)
 // Build map once
 tagMap := BuildTagMap(tlvs)
 
-// Fast lookups
-if aid, found := tagMap["84"]; found {
+// Fast lookups - get first occurrence
+if aid, found := FindFirst(tagMap, "84"); found {
     fmt.Printf("AID: %X\n", aid.Value)
+}
+
+// Get all occurrences of a tag
+if labels, found := Find(tagMap, "50"); found {
+    for i, label := range labels {
+        fmt.Printf("Label %d: %s\n", i+1, string(label.Value))
+    }
 }
 ```
 
@@ -244,14 +257,36 @@ if aid, found := tagMap["84"]; found {
 // Real-world EMV processing scenario
 tagMap := BuildTagMap(cardResponse)
 
-// Extract required EMV tags
-aid := tagMap["84"]           // Application Identifier
-label := tagMap["50"]         // Application Label  
-priority := tagMap["87"]      // Priority Indicator
-pdol := tagMap["9F38"]        // PDOL
-languagePref := tagMap["5F2D"] // Language Preference
+// Extract required EMV tags (first occurrence)
+aid, _ := FindFirst(tagMap, "84")          // Application Identifier
+label, _ := FindFirst(tagMap, "50")        // Application Label  
+priority, _ := FindFirst(tagMap, "87")     // Priority Indicator
+pdol, _ := FindFirst(tagMap, "9F38")       // PDOL
+languagePref, _ := FindFirst(tagMap, "5F2D") // Language Preference
 
 // Process transaction with extracted data...
+```
+
+### Handling Duplicate Tags in Constructed TLVs
+```go
+// EMV data with multiple application templates
+tagMap := BuildTagMap(emvResponse)
+
+// Find all instances of Issuer Application Data (9F10)
+// which can appear in multiple templates
+if instances, found := Find(tagMap, "9F10"); found {
+    fmt.Printf("Found %d instances of tag 9F10:\n", len(instances))
+    for i, instance := range instances {
+        fmt.Printf("  Instance %d: %X\n", i+1, instance.Value)
+    }
+}
+
+// Process all Application IDs
+if aids, found := Find(tagMap, "84"); found {
+    for _, aid := range aids {
+        processApplication(aid.Value)
+    }
+}
 ```
 
 ### Performance Monitoring
@@ -267,10 +302,22 @@ fmt.Printf("Map contains %d tags, using ~%d bytes\n",
 
 ### Features
 - **Recursive flattening**: Handles arbitrarily nested TLV structures
-- **Duplicate handling**: First occurrence wins (depth-first order)
+- **Duplicate tag preservation**: All instances of duplicate tags are preserved
+- **EMV compliance**: Properly handles duplicate tags in constructed TLVs (e.g., multiple 9F10 tags in different templates)
 - **Memory optimization**: Pre-sized maps to reduce allocations
 - **Zero allocations**: For lookups after map creation
 - **Thread-safe**: Maps are safe for concurrent reads
+
+### Duplicate Tag Handling
+
+In EMV and other TLV-based protocols, the same tag can legitimately appear multiple times within different constructed (template) tags. For example:
+- Tag 9F10 (Issuer Application Data) may appear in multiple application templates
+- Tag 84 (Application ID) may differ between applications
+- Tag 50 (Application Label) varies by application
+
+The `BuildTagMap` function preserves all instances, allowing you to:
+- Use `FindFirst()` when you only need one instance (backward compatible behavior)
+- Use `Find()` when you need to process all instances (e.g., multiple applications)
 
 ### Backward Compatibility
 - No changes to existing API
@@ -324,20 +371,27 @@ label, _ := FindFirstTag(tlvs, "50")
 priority, _ := FindFirstTag(tlvs, "87")
 ```
 
-**After:**
+**After (simple case - single tags):**
 ```go
 tagMap := BuildTagMap(tlvs)
-aid, _ := tagMap["84"]
-label, _ := tagMap["50"]
-priority, _ := tagMap["87"]
+aid, _ := FindFirst(tagMap, "84")
+label, _ := FindFirst(tagMap, "50")
+priority, _ := FindFirst(tagMap, "87")
 ```
 
-**Or using convenience function:**
+**Handling duplicate tags:**
 ```go
 tagMap := BuildTagMap(tlvs)
-aid, _ := FindTagInMap(tagMap, "84")
-label, _ := FindTagInMap(tagMap, "50")
-priority, _ := FindTagInMap(tagMap, "87")
+
+// Get all instances of a tag that appears multiple times
+if instances, found := Find(tagMap, "9F10"); found {
+    for _, instance := range instances {
+        processInstance(instance)
+    }
+}
+
+// Or just get the first one if that's all you need
+first, _ := FindFirst(tagMap, "9F10")
 ```
 
 ## Contribution
