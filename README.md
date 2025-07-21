@@ -151,49 +151,56 @@ This enhancement adds high-performance tag mapping functionality to the bertlv l
 
 ## Problem Solved
 
-The existing `FindFirstTag()` function uses recursive depth-first search with O(n) time complexity. For applications like EMV payment processing that need to access multiple tags repeatedly, this creates a performance bottleneck:
+When you need to access multiple tags from the same TLV data, the traditional approach requires repeated O(n) searches:
 
 ```go
-// Traditional approach - O(n) for each lookup
-aid, _ := FindFirstTag(tlvs, "84")      // Search entire structure
-label, _ := FindFirstTag(tlvs, "50")    // Search again from beginning  
-priority, _ := FindFirstTag(tlvs, "87") // Search again...
+// Traditional approach - O(n) search for each tag lookup
+data, _ := hex.DecodeString("6F468407A000000003...")
+tlvs, _ := Decode(data)
+
+aid, _ := FindFirstTag(tlvs, "84")      // O(n) search through entire structure
+label, _ := FindFirstTag(tlvs, "50")    // O(n) search again from beginning  
+priority, _ := FindFirstTag(tlvs, "87") // O(n) search again...
 ```
 
-## Solution: BuildTagMap()
+## Solution: Tag Map Optimization
 
-The new `BuildTagMap()` function creates a flattened map of all tags for O(1) lookups. **Importantly, it preserves all instances of duplicate tags**, which is essential for EMV processing where the same tag can appear in multiple constructed TLVs:
+The tag map optimization introduces a preprocessing step that enables O(1) lookups. **Importantly, it preserves all instances of duplicate tags**, which is essential for EMV processing:
 
 ```go
-// New approach - O(1) for each lookup after initial O(n) map building
-tagMap := BuildTagMap(tlvs)           // One-time O(n) operation
-aid, _ := FindFirst(tagMap, "84")    // O(1) lookup - returns first occurrence
-labels, _ := Find(tagMap, "50")      // O(1) lookup - returns all occurrences
+// Tag map approach - O(1) lookups after O(n) preprocessing
+data, _ := hex.DecodeString("6F468407A000000003...")
+tlvs, _ := Decode(data)
+tagMap := BuildTagMap(tlvs)           // One-time O(n) preprocessing
+
+aid, _ := FindFirst(tagMap, "84")     // O(1) lookup - first occurrence
+labels, _ := Find(tagMap, "50")       // O(1) lookup - all occurrences
+priority, _ := FindFirst(tagMap, "87") // O(1) lookup - first occurrence
 ```
 
 ## Performance Improvements
 
 Based on benchmarks with realistic EMV TLV structures:
 
-| Operation | FindFirstTag | BuildTagMap + Lookup | Improvement |
-|-----------|--------------|---------------------|-------------|
-| Single lookup | 156 ns/op | 98 ns/op | 37% faster |
-| 5 tag lookups | 780 ns/op | 145 ns/op | 81% faster |
-| 10 tag lookups | 1,560 ns/op | 190 ns/op | 88% faster |
+| Operation | Traditional Approach | Tag Map Approach | Improvement |
+|-----------|---------------------|------------------|-------------|
+| Single lookup | `FindFirstTag`: 156 ns/op | `BuildTagMap + FindFirst`: 98 ns/op | 37% faster |
+| 5 tag lookups | `5x FindFirstTag`: 780 ns/op | `BuildTagMap + 5x FindFirst`: 145 ns/op | 81% faster |
+| 10 tag lookups | `10x FindFirstTag`: 1,560 ns/op | `BuildTagMap + 10x FindFirst`: 190 ns/op | 88% faster |
 
 **Memory trade-off**: Higher memory usage (~2-3x) for significantly faster lookups.
 
 ## When to Use Each Approach
 
-### Use `FindFirstTag()` when:
-- Looking up only 1-2 tags
+### Use Traditional Approach (`FindFirstTag`) when:
+- Looking up only 1-2 tags from the same TLV data
 - Working with small TLV structures (< 10 tags)
 - Memory usage is more critical than speed
 - One-time tag access
 - You don't need to handle duplicate tags
 
-### Use `BuildTagMap()` when:
-- Looking up 3+ tags from same structure
+### Use Tag Map Approach (`BuildTagMap + FindFirst/Find`) when:
+- Looking up 3+ tags from the same TLV data
 - Processing many transactions with similar tag access patterns
 - Performance is critical (EMV payment processing, high-frequency operations)
 - Tags will be accessed multiple times
@@ -362,18 +369,26 @@ BenchmarkCompleteWorkflow_TagMapReused-8    2000000     945 ns/op    0 B/op    0
 
 ## Migration Guide
 
-### From FindFirstTag to BuildTagMap
+### From Traditional to Tag Map Approach
 
-**Before:**
+**Before (Traditional Approach):**
 ```go
+data, _ := hex.DecodeString("6F468407A000...")
+tlvs, _ := Decode(data)
+
+// Multiple O(n) searches
 aid, _ := FindFirstTag(tlvs, "84")
 label, _ := FindFirstTag(tlvs, "50") 
 priority, _ := FindFirstTag(tlvs, "87")
 ```
 
-**After (simple case - single tags):**
+**After (Tag Map Approach):**
 ```go
-tagMap := BuildTagMap(tlvs)
+data, _ := hex.DecodeString("6F468407A000...")
+tlvs, _ := Decode(data)
+tagMap := BuildTagMap(tlvs)  // O(n) preprocessing
+
+// Multiple O(1) lookups
 aid, _ := FindFirst(tagMap, "84")
 label, _ := FindFirst(tagMap, "50")
 priority, _ := FindFirst(tagMap, "87")
@@ -390,7 +405,7 @@ if instances, found := Find(tagMap, "9F10"); found {
     }
 }
 
-// Or just get the first one if that's all you need
+// Or just get the first one (equivalent to FindFirstTag behavior)
 first, _ := FindFirst(tagMap, "9F10")
 ```
 
