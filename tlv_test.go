@@ -332,3 +332,63 @@ func BenchmarkCopyTags(b *testing.B) {
 		})
 	}
 }
+
+// TestDecodeMalformedLengthDoesNotPanic verifies that Decode returns an error
+// (never panics) on inputs whose long-form length field overflows an int.
+//
+// Regression for a slice-bounds-out-of-range panic: a long-form BER length of up
+// to 127 bytes was accumulated into an int without an overflow guard, so a large
+// length wrapped to a negative value. The caller's "len(data) < length" bounds
+// check then passed (a small non-negative len is not < a negative length) and
+// the subsequent data[:length] slice expression panicked.
+func TestDecodeMalformedLengthDoesNotPanic(t *testing.T) {
+	tests := []struct {
+		name string
+		data []byte
+	}{
+		{
+			// tag 5A; length byte 0x88 = long form, 8 length-bytes; then 8x0xFF.
+			// The 8 bytes accumulate to int64(-1), bypassing the bounds check.
+			name: "8-byte length overflows to negative",
+			data: []byte{0x5A, 0x88, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+		},
+		{
+			// length byte 0x9C = long form, 0x1C (28) length-bytes: more than 8,
+			// so it must be rejected outright.
+			name: "28-byte length field",
+			data: []byte("0\x9c00000000000000000000\x9c0000000"),
+		},
+		{
+			// Positive-but-too-large length (claims 0xFFFF bytes of value).
+			name: "length exceeds remaining data",
+			data: []byte{0x5A, 0x82, 0xFF, 0xFF},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.NotPanics(t, func() {
+				_, err := bertlv.Decode(tt.data)
+				require.Error(t, err)
+			})
+		})
+	}
+}
+
+// FuzzDecode ensures Decode never panics on arbitrary input; returning an error
+// is the only acceptable failure mode for malformed data.
+func FuzzDecode(f *testing.F) {
+	seeds := [][]byte{
+		{},
+		{0x5A, 0x08, 0x41, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11},
+		{0x6F, 0x03, 0x84, 0x01, 0x00}, // composite (recurses)
+		{0x5A, 0x88, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+		[]byte("0\x9c00000000000000000000\x9c0000000"),
+	}
+	for _, s := range seeds {
+		f.Add(s)
+	}
+	f.Fuzz(func(t *testing.T, data []byte) {
+		_, _ = bertlv.Decode(data)
+	})
+}

@@ -256,9 +256,23 @@ func decodeLength(data []byte) (int, int, error) {
 		return 0, 0, errors.New("length is incomplete")
 	}
 
+	// A length encoded in more than 8 bytes cannot fit in a 64-bit int. Reject it
+	// so the accumulation below cannot overflow into a bogus (possibly negative)
+	// value that would bypass the caller's bounds check and cause a
+	// slice-out-of-range panic on malformed input.
+	if lengthBytes > 8 {
+		return 0, 0, fmt.Errorf("length field too large: %d bytes", lengthBytes)
+	}
+
 	length := 0
 	for i := 1; i <= lengthBytes; i++ {
 		length = length<<8 | int(data[i])
+	}
+
+	// An 8-byte length with the high bit set overflows int's sign bit, producing a
+	// negative length. Reject it rather than passing it to a slice expression.
+	if length < 0 {
+		return 0, 0, errors.New("length overflow: value too large")
 	}
 
 	return length, lengthBytes + 1, nil
