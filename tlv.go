@@ -162,8 +162,8 @@ func prettyPrint(tlvs []TLV, sb *strings.Builder, level int) {
 // bytes used to encode the length of the value field
 func encodeLength(length int) []byte {
 	if length < 128 {
-		// short form
-		return []byte{byte(length)}
+		// short form (length is < 128; mask keeps the conversion provably in range)
+		return []byte{byte(length & 0xFF)}
 	}
 
 	// long form
@@ -174,7 +174,8 @@ func encodeLength(length int) []byte {
 		length >>= 8 // discard the last byte
 	}
 
-	return append([]byte{byte(0b1000_0000 | len(lengthBytes))}, lengthBytes...)
+	// len(lengthBytes) is small (<= 8); mask keeps the conversion provably in range.
+	return append([]byte{byte((0b1000_0000 | len(lengthBytes)) & 0xFF)}, lengthBytes...)
 }
 
 func validateTag(tag []byte) error {
