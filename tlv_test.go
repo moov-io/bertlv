@@ -1,6 +1,7 @@
 package bertlv_test
 
 import (
+	"encoding/hex"
 	"fmt"
 	"testing"
 
@@ -331,4 +332,113 @@ func BenchmarkCopyTags(b *testing.B) {
 			}
 		})
 	}
+}
+
+// TestDecodeMalformedLengthDoesNotPanic verifies that Decode returns an error
+// (never panics) on inputs whose long-form length field overflows an int.
+//
+// Regression for a slice-bounds-out-of-range panic: a long-form BER length of up
+// to 127 bytes was accumulated into an int without an overflow guard, so a large
+// length wrapped to a negative value. The caller's "len(data) < length" bounds
+// check then passed (a small non-negative len is not < a negative length) and
+// the subsequent data[:length] slice expression panicked.
+func TestDecodeMalformedLengthDoesNotPanic(t *testing.T) {
+	tests := []struct {
+		name string
+		data []byte
+	}{
+		{
+			// tag 5A; length byte 0x88 = long form, 8 length-bytes; then 8x0xFF.
+			// The 8 bytes accumulate to int64(-1), bypassing the bounds check.
+			name: "8-byte length overflows to negative",
+			data: []byte{0x5A, 0x88, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+		},
+		{
+			// Fuzz corpus: nested long-form lengths that previously overflowed.
+			name: "nested long-form overflow corpus",
+			data: []byte{0x30, 0x89, 0x30, 0x89, 0x00, 0x00, 0x00, 0x00, 0x00},
+		},
+		{
+			// length byte 0x9C = long form, 0x1C (28) length-bytes: more than 8,
+			// so it must be rejected outright.
+			name: "28-byte length field",
+			data: []byte("0\x9c00000000000000000000\x9c0000000"),
+		},
+		{
+			// Positive-but-too-large length (claims 0xFFFF bytes of value).
+			name: "length exceeds remaining data",
+			data: []byte{0x5A, 0x82, 0xFF, 0xFF},
+		},
+		{
+			// High bit set in a 4-byte length: negative on both 32- and 64-bit int.
+			name: "4-byte length with sign bit set",
+			data: []byte{0x5A, 0x84, 0x80, 0x00, 0x00, 0x00},
+		},
+		{
+			// BER indefinite length (0x80) is not supported.
+			name: "indefinite length",
+			data: []byte{0x5A, 0x80},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.NotPanics(t, func() {
+				_, err := bertlv.Decode(tt.data)
+				require.Error(t, err)
+			})
+		})
+	}
+}
+
+// FuzzDecode ensures Decode never panics on arbitrary input; returning an error
+// is the only acceptable failure mode for malformed data. Successful decodes
+// are round-tripped through Encode when possible.
+func FuzzDecode(f *testing.F) {
+	// Minimal / edge seeds
+	f.Add([]byte{})
+	f.Add([]byte{0x5A, 0x08, 0x41, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11})
+	f.Add([]byte{0x6F, 0x03, 0x84, 0x01, 0x00}) // composite (recurses)
+	// Overflow / malformed length seeds (regression)
+	f.Add([]byte{0x5A, 0x88, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF})
+	f.Add([]byte{0x30, 0x89, 0x30, 0x89, 0x00, 0x00, 0x00, 0x00, 0x00})
+	f.Add([]byte("0\x9c00000000000000000000\x9c0000000"))
+	f.Add([]byte{0x5A, 0x80}) // indefinite length
+	f.Add([]byte{0x5A, 0x84, 0x80, 0x00, 0x00, 0x00})
+	// Real-world EMV samples (from library tests / payment processing)
+	for _, h := range []string{
+		// EMV FCI with AID, label, PDOL (optimization_test.go simpleEMVData)
+		"6F468407A0000000031010A53B500B56495341204352454449548701015F2D02656E9F38189F66049F02069F03069F1A0295055F2A029A039C019F3704BF0C089F5A051108400840",
+		// PSE FCI with Mastercard AID
+		"6F2F840E325041592E5359532E4444463031A51DBF0C1A61184F07A0000000041010500A4D617374657263617264870101",
+	} {
+		if raw, err := hex.DecodeString(h); err == nil {
+			f.Add(raw)
+		}
+	}
+	// Common EMV tags
+	f.Add([]byte{0x9F, 0x02, 0x06, 0x00, 0x00, 0x00, 0x00, 0x12, 0x34})
+	f.Add([]byte{0x4F, 0x07, 0xA0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10})
+
+	f.Fuzz(func(t *testing.T, data []byte) {
+		if len(data) > 16*1024 {
+			t.Skip()
+		}
+
+		tlvs, err := bertlv.Decode(data)
+		if err != nil {
+			return
+		}
+
+		// Round-trip: Encode then Decode again must not panic.
+		encoded, err := bertlv.Encode(tlvs)
+		if err != nil {
+			return
+		}
+		_, _ = bertlv.Decode(encoded)
+
+		_ = bertlv.BuildTagMap(tlvs)
+		_, _ = bertlv.FindFirstTag(tlvs, "4F")
+		_, _ = bertlv.FindTagByPath(tlvs, "6F")
+	})
 }

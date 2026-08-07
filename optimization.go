@@ -5,7 +5,7 @@
 package bertlv
 
 // BuildTagMap creates a flattened map of all tags for O(1) lookups.
-// This optimization is particularly useful for applications that need to 
+// This optimization is particularly useful for applications that need to
 // access multiple tags from the same TLV structure repeatedly, such as
 // EMV payment processing where tag lookups are performance-critical.
 //
@@ -15,13 +15,14 @@ package bertlv
 // that appear in different constructed TLVs.
 //
 // Usage:
-//   tagMap := BuildTagMap(tlvs)
-//   if tags, found := tagMap["84"]; found {
-//       // Process tag(s) - O(1) operation
-//       for _, tag := range tags {
-//           // Handle each occurrence
-//       }
-//   }
+//
+//	tagMap := BuildTagMap(tlvs)
+//	if tags, found := tagMap["84"]; found {
+//	    // Process tag(s) - O(1) operation
+//	    for _, tag := range tags {
+//	        // Handle each occurrence
+//	    }
+//	}
 //
 // Note: Duplicate tags within constructed TLVs are preserved in the order
 // they are encountered during depth-first traversal.
@@ -29,14 +30,14 @@ func BuildTagMap(tlvs []TLV) map[string][]TLV {
 	if len(tlvs) == 0 {
 		return make(map[string][]TLV)
 	}
-	
+
 	// Estimate map size to reduce reallocations
 	estimatedSize := estimateTagCount(tlvs)
 	tagMap := make(map[string][]TLV, estimatedSize)
-	
+
 	// Recursively flatten all tags including nested ones
 	flattenTags(tlvs, tagMap)
-	
+
 	return tagMap
 }
 
@@ -46,7 +47,7 @@ func flattenTags(tlvs []TLV, tagMap map[string][]TLV) {
 	for _, tlv := range tlvs {
 		// Always append - preserve all instances
 		tagMap[tlv.Tag] = append(tagMap[tlv.Tag], tlv)
-		
+
 		// Recursively process nested TLVs
 		if len(tlv.TLVs) > 0 {
 			flattenTags(tlv.TLVs, tagMap)
@@ -58,14 +59,14 @@ func flattenTags(tlvs []TLV, tagMap map[string][]TLV) {
 // This helps reduce map reallocations during building.
 func estimateTagCount(tlvs []TLV) int {
 	count := len(tlvs)
-	
+
 	// Add estimated nested tags (assume average of 2x nesting)
 	for _, tlv := range tlvs {
 		if len(tlv.TLVs) > 0 {
 			count += estimateTagCount(tlv.TLVs)
 		}
 	}
-	
+
 	return count
 }
 
@@ -100,22 +101,22 @@ func GetTagMapStats(tagMap map[string][]TLV) TagMapStats {
 	stats := TagMapStats{
 		UniqueTags: len(tagMap),
 	}
-	
+
 	// Count total tags and calculate memory estimate
 	for tag, instances := range tagMap {
 		stats.TotalTags += len(instances)
 		if len(instances) > 1 {
 			stats.DuplicateTags += len(instances) - 1
 		}
-		
+
 		// Memory estimate
 		stats.MemoryEstimate += int64(len(tag)) * int64(len(instances)) // Tag strings
 		for _, tlv := range instances {
-			stats.MemoryEstimate += int64(len(tlv.Value))     // Value bytes
-			stats.MemoryEstimate += 64                        // Struct overhead estimate
+			stats.MemoryEstimate += int64(len(tlv.Value)) // Value bytes
+			stats.MemoryEstimate += 64                    // Struct overhead estimate
 		}
 		stats.MemoryEstimate += int64(len(instances)) * 8 // Slice overhead
 	}
-	
+
 	return stats
 }
