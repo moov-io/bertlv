@@ -91,8 +91,8 @@ func Decode(data []byte) ([]TLV, error) {
 		}
 		data = data[read:]
 
-		// ensure the value length is within bounds
-		if len(data) < length {
+		// ensure the value length is within bounds (also reject negative from overflow)
+		if length < 0 || len(data) < length {
 			return nil, fmt.Errorf("insufficient data for expected length %d", length)
 		}
 		value := data[:length]
@@ -253,25 +253,36 @@ func decodeLength(data []byte) (int, int, error) {
 
 	// long form
 	lengthBytes := int(data[0] & 0b0111_1111)
+	if lengthBytes == 0 {
+		// BER indefinite length is not supported
+		return 0, 0, errors.New("indefinite length is not supported")
+	}
+	// A length encoded in more than 8 bytes cannot fit in a 64-bit int.
+	// Reject it so the accumulation below cannot overflow into a bogus
+	// (possibly negative) value that would bypass the caller's bounds
+	// check and cause a slice-out-of-range panic on malformed input.
+	if lengthBytes > 8 {
+		return 0, 0, fmt.Errorf("length field too large: %d bytes", lengthBytes)
+	}
 	if len(data) < lengthBytes+1 {
 		return 0, 0, errors.New("length is incomplete")
 	}
 
-	// A length encoded in more than 8 bytes cannot fit in a 64-bit int. Reject it
-	// so the accumulation below cannot overflow into a bogus (possibly negative)
-	// value that would bypass the caller's bounds check and cause a
-	// slice-out-of-range panic on malformed input.
-	if lengthBytes > 8 {
-		return 0, 0, fmt.Errorf("length field too large: %d bytes", lengthBytes)
-	}
-
-	length := 0
+	var length int
 	for i := 1; i <= lengthBytes; i++ {
-		length = length<<8 | int(data[i])
+		// Guard against overflow when shifting into int (portable across
+		// 32- and 64-bit platforms; a post-hoc length < 0 check alone
+		// misses wrap-to-positive cases on 32-bit int).
+		next := data[i]
+		if length > (int(^uint(0)>>1)-int(next))/256 {
+			return 0, 0, errors.New("length overflows")
+		}
+		length = length<<8 | int(next)
 	}
 
-	// An 8-byte length with the high bit set overflows int's sign bit, producing a
-	// negative length. Reject it rather than passing it to a slice expression.
+	// An 8-byte length with the high bit set overflows int's sign bit on
+	// 64-bit platforms, producing a negative length. Reject it rather
+	// than passing it to a slice expression.
 	if length < 0 {
 		return 0, 0, errors.New("length overflow: value too large")
 	}

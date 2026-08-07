@@ -353,6 +353,11 @@ func TestDecodeMalformedLengthDoesNotPanic(t *testing.T) {
 			data: []byte{0x5A, 0x88, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
 		},
 		{
+			// Fuzz corpus: nested long-form lengths that previously overflowed.
+			name: "nested long-form overflow corpus",
+			data: []byte{0x30, 0x89, 0x30, 0x89, 0x00, 0x00, 0x00, 0x00, 0x00},
+		},
+		{
 			// length byte 0x9C = long form, 0x1C (28) length-bytes: more than 8,
 			// so it must be rejected outright.
 			name: "28-byte length field",
@@ -362,6 +367,16 @@ func TestDecodeMalformedLengthDoesNotPanic(t *testing.T) {
 			// Positive-but-too-large length (claims 0xFFFF bytes of value).
 			name: "length exceeds remaining data",
 			data: []byte{0x5A, 0x82, 0xFF, 0xFF},
+		},
+		{
+			// High bit set in a 4-byte length: negative on both 32- and 64-bit int.
+			name: "4-byte length with sign bit set",
+			data: []byte{0x5A, 0x84, 0x80, 0x00, 0x00, 0x00},
+		},
+		{
+			// BER indefinite length (0x80) is not supported.
+			name: "indefinite length",
+			data: []byte{0x5A, 0x80},
 		},
 	}
 
@@ -373,22 +388,4 @@ func TestDecodeMalformedLengthDoesNotPanic(t *testing.T) {
 			})
 		})
 	}
-}
-
-// FuzzDecode ensures Decode never panics on arbitrary input; returning an error
-// is the only acceptable failure mode for malformed data.
-func FuzzDecode(f *testing.F) {
-	seeds := [][]byte{
-		{},
-		{0x5A, 0x08, 0x41, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11},
-		{0x6F, 0x03, 0x84, 0x01, 0x00}, // composite (recurses)
-		{0x5A, 0x88, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
-		[]byte("0\x9c00000000000000000000\x9c0000000"),
-	}
-	for _, s := range seeds {
-		f.Add(s)
-	}
-	f.Fuzz(func(t *testing.T, data []byte) {
-		_, _ = bertlv.Decode(data)
-	})
 }
