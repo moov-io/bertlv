@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         command:
-          - "go test . -fuzz FuzzDecodeEncode -fuzztime 10m"
+          - "go test . -fuzz FuzzDecode -fuzztime 10m"
 
     steps:
     - name: Set up Go 1.x

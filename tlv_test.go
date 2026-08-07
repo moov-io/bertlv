@@ -1,6 +1,7 @@
 package bertlv_test
 
 import (
+	"encoding/hex"
 	"fmt"
 	"testing"
 
@@ -388,4 +389,56 @@ func TestDecodeMalformedLengthDoesNotPanic(t *testing.T) {
 			})
 		})
 	}
+}
+
+// FuzzDecode ensures Decode never panics on arbitrary input; returning an error
+// is the only acceptable failure mode for malformed data. Successful decodes
+// are round-tripped through Encode when possible.
+func FuzzDecode(f *testing.F) {
+	// Minimal / edge seeds
+	f.Add([]byte{})
+	f.Add([]byte{0x5A, 0x08, 0x41, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11})
+	f.Add([]byte{0x6F, 0x03, 0x84, 0x01, 0x00}) // composite (recurses)
+	// Overflow / malformed length seeds (regression)
+	f.Add([]byte{0x5A, 0x88, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF})
+	f.Add([]byte{0x30, 0x89, 0x30, 0x89, 0x00, 0x00, 0x00, 0x00, 0x00})
+	f.Add([]byte("0\x9c00000000000000000000\x9c0000000"))
+	f.Add([]byte{0x5A, 0x80}) // indefinite length
+	f.Add([]byte{0x5A, 0x84, 0x80, 0x00, 0x00, 0x00})
+	// Real-world EMV samples (from library tests / payment processing)
+	for _, h := range []string{
+		// EMV FCI with AID, label, PDOL (optimization_test.go simpleEMVData)
+		"6F468407A0000000031010A53B500B56495341204352454449548701015F2D02656E9F38189F66049F02069F03069F1A0295055F2A029A039C019F3704BF0C089F5A051108400840",
+		// PSE FCI with Mastercard AID
+		"6F2F840E325041592E5359532E4444463031A51DBF0C1A61184F07A0000000041010500A4D617374657263617264870101",
+	} {
+		if raw, err := hex.DecodeString(h); err == nil {
+			f.Add(raw)
+		}
+	}
+	// Common EMV tags
+	f.Add([]byte{0x9F, 0x02, 0x06, 0x00, 0x00, 0x00, 0x00, 0x12, 0x34})
+	f.Add([]byte{0x4F, 0x07, 0xA0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10})
+
+	f.Fuzz(func(t *testing.T, data []byte) {
+		if len(data) > 16*1024 {
+			t.Skip()
+		}
+
+		tlvs, err := bertlv.Decode(data)
+		if err != nil {
+			return
+		}
+
+		// Round-trip: Encode then Decode again must not panic.
+		encoded, err := bertlv.Encode(tlvs)
+		if err != nil {
+			return
+		}
+		_, _ = bertlv.Decode(encoded)
+
+		_ = bertlv.BuildTagMap(tlvs)
+		_, _ = bertlv.FindFirstTag(tlvs, "4F")
+		_, _ = bertlv.FindTagByPath(tlvs, "6F")
+	})
 }
