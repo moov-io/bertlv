@@ -332,3 +332,10 @@ func BenchmarkCopyTags(b *testing.B) {
 		})
 	}
 }
+
+func TestDecode_OverflowLength(t *testing.T) {
+	// Long-form length that previously overflowed into a negative slice bound
+	data := []byte{0x30, 0x89, 0x30, 0x89, 0x00, 0x00, 0x00, 0x00, 0x00}
+	_, err := bertlv.Decode(data)
+	require.Error(t, err)
+}

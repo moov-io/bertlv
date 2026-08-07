@@ -91,8 +91,8 @@ func Decode(data []byte) ([]TLV, error) {
 		}
 		data = data[read:]
 
-		// ensure the value length is within bounds
-		if len(data) < length {
+		// ensure the value length is within bounds (also reject negative from overflow)
+		if length < 0 || len(data) < length {
 			return nil, fmt.Errorf("insufficient data for expected length %d", length)
 		}
 		value := data[:length]
@@ -252,13 +252,31 @@ func decodeLength(data []byte) (int, int, error) {
 
 	// long form
 	lengthBytes := int(data[0] & 0b0111_1111)
+	if lengthBytes == 0 {
+		// BER indefinite length is not supported
+		return 0, 0, errors.New("indefinite length is not supported")
+	}
+	// A length encoded in more than the size of int cannot be represented,
+	// and shifting would overflow into negative values (and panic on slice).
+	if lengthBytes > 8 {
+		return 0, 0, errors.New("length is too large")
+	}
 	if len(data) < lengthBytes+1 {
 		return 0, 0, errors.New("length is incomplete")
 	}
 
-	length := 0
+	var length int
 	for i := 1; i <= lengthBytes; i++ {
-		length = length<<8 | int(data[i])
+		// Guard against overflow when shifting into int.
+		next := data[i]
+		if length > (int(^uint(0)>>1)-int(next))/256 {
+			return 0, 0, errors.New("length overflows")
+		}
+		length = length<<8 | int(next)
+	}
+
+	if length < 0 {
+		return 0, 0, errors.New("length is negative")
 	}
 
 	return length, lengthBytes + 1, nil
