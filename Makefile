@@ -11,3 +11,7 @@ else
 	@chmod +x ./lint-project.sh
 	COVER_THRESHOLD=60.0 ./lint-project.sh
 endif
+
+.PHONY: bench
+bench:
+	go test . -count=1 -run '^$$' -bench '^Benchmark' -benchmem | tee output.txt
