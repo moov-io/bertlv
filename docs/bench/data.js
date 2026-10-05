@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1791110954655,
+  "lastUpdate": 1791201385938,
   "repoUrl": "https://github.com/moov-io/bertlv",
   "entries": {
     "moov-io/bertlv": [
@@ -9534,6 +9534,460 @@ window.BENCHMARK_DATA = {
             "value": 21,
             "unit": "allocs/op",
             "extra": "1000000 times\n4 procs"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "renovate[bot]",
+            "username": "renovate[bot]",
+            "email": "29139614+renovate[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "86ea4f537db746a2af4f8c0eda501f0fa0f72205",
+          "message": "chore(deps): update github/codeql-action action to v4.38.2 (#37)\n\nCo-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>",
+          "timestamp": "2026-09-25T13:51:22Z",
+          "url": "https://github.com/moov-io/bertlv/commit/86ea4f537db746a2af4f8c0eda501f0fa0f72205"
+        },
+        "date": 1791201384995,
+        "tool": "go",
+        "benches": [
+          {
+            "name": "BenchmarkFindFirstTag_Single",
+            "value": 9.664,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "125366671 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindFirstTag_Single - ns/op",
+            "value": 9.664,
+            "unit": "ns/op",
+            "extra": "125366671 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindFirstTag_Single - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "125366671 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindFirstTag_Single - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "125366671 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindFirstTag_Multiple",
+            "value": 85.34,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "14089060 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindFirstTag_Multiple - ns/op",
+            "value": 85.34,
+            "unit": "ns/op",
+            "extra": "14089060 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindFirstTag_Multiple - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "14089060 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindFirstTag_Multiple - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "14089060 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildTagMap",
+            "value": 415.3,
+            "unit": "ns/op\t    1368 B/op\t      13 allocs/op",
+            "extra": "2971154 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildTagMap - ns/op",
+            "value": 415.3,
+            "unit": "ns/op",
+            "extra": "2971154 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildTagMap - B/op",
+            "value": 1368,
+            "unit": "B/op",
+            "extra": "2971154 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkBuildTagMap - allocs/op",
+            "value": 13,
+            "unit": "allocs/op",
+            "extra": "2971154 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTagMapLookup_Single",
+            "value": 5.781,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "209007070 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTagMapLookup_Single - ns/op",
+            "value": 5.781,
+            "unit": "ns/op",
+            "extra": "209007070 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTagMapLookup_Single - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "209007070 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTagMapLookup_Single - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "209007070 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTagMapLookup_Multiple",
+            "value": 31.78,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "39231498 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTagMapLookup_Multiple - ns/op",
+            "value": 31.78,
+            "unit": "ns/op",
+            "extra": "39231498 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTagMapLookup_Multiple - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "39231498 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkTagMapLookup_Multiple - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "39231498 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompleteWorkflow_FindFirstTag",
+            "value": 106.9,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "11437648 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompleteWorkflow_FindFirstTag - ns/op",
+            "value": 106.9,
+            "unit": "ns/op",
+            "extra": "11437648 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompleteWorkflow_FindFirstTag - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "11437648 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompleteWorkflow_FindFirstTag - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "11437648 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompleteWorkflow_TagMap",
+            "value": 451.5,
+            "unit": "ns/op\t    1368 B/op\t      13 allocs/op",
+            "extra": "2577072 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompleteWorkflow_TagMap - ns/op",
+            "value": 451.5,
+            "unit": "ns/op",
+            "extra": "2577072 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompleteWorkflow_TagMap - B/op",
+            "value": 1368,
+            "unit": "B/op",
+            "extra": "2577072 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompleteWorkflow_TagMap - allocs/op",
+            "value": 13,
+            "unit": "allocs/op",
+            "extra": "2577072 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompleteWorkflow_TagMapReused",
+            "value": 44.49,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "27255476 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompleteWorkflow_TagMapReused - ns/op",
+            "value": 44.49,
+            "unit": "ns/op",
+            "extra": "27255476 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompleteWorkflow_TagMapReused - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "27255476 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCompleteWorkflow_TagMapReused - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "27255476 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNestedStructures_FindFirstTag",
+            "value": 25.66,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "48062715 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNestedStructures_FindFirstTag - ns/op",
+            "value": 25.66,
+            "unit": "ns/op",
+            "extra": "48062715 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNestedStructures_FindFirstTag - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "48062715 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNestedStructures_FindFirstTag - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "48062715 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNestedStructures_TagMap",
+            "value": 432,
+            "unit": "ns/op\t    1368 B/op\t      13 allocs/op",
+            "extra": "2663624 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNestedStructures_TagMap - ns/op",
+            "value": 432,
+            "unit": "ns/op",
+            "extra": "2663624 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNestedStructures_TagMap - B/op",
+            "value": 1368,
+            "unit": "B/op",
+            "extra": "2663624 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkNestedStructures_TagMap - allocs/op",
+            "value": 13,
+            "unit": "allocs/op",
+            "extra": "2663624 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMemoryUsage_BuildTagMap",
+            "value": 411.2,
+            "unit": "ns/op\t    1368 B/op\t      13 allocs/op",
+            "extra": "2790913 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMemoryUsage_BuildTagMap - ns/op",
+            "value": 411.2,
+            "unit": "ns/op",
+            "extra": "2790913 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMemoryUsage_BuildTagMap - B/op",
+            "value": 1368,
+            "unit": "B/op",
+            "extra": "2790913 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMemoryUsage_BuildTagMap - allocs/op",
+            "value": 13,
+            "unit": "allocs/op",
+            "extra": "2790913 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMemoryUsage_FindFirstTag",
+            "value": 25.6,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "48046933 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMemoryUsage_FindFirstTag - ns/op",
+            "value": 25.6,
+            "unit": "ns/op",
+            "extra": "48046933 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMemoryUsage_FindFirstTag - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "48046933 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMemoryUsage_FindFirstTag - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "48046933 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/No_tags_matched",
+            "value": 128.4,
+            "unit": "ns/op\t     128 B/op\t       1 allocs/op",
+            "extra": "9035124 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/No_tags_matched - ns/op",
+            "value": 128.4,
+            "unit": "ns/op",
+            "extra": "9035124 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/No_tags_matched - B/op",
+            "value": 128,
+            "unit": "B/op",
+            "extra": "9035124 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/No_tags_matched - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "9035124 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/One_flat_tag_matched",
+            "value": 121.5,
+            "unit": "ns/op\t      72 B/op\t       2 allocs/op",
+            "extra": "9953482 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/One_flat_tag_matched - ns/op",
+            "value": 121.5,
+            "unit": "ns/op",
+            "extra": "9953482 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/One_flat_tag_matched - B/op",
+            "value": 72,
+            "unit": "B/op",
+            "extra": "9953482 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/One_flat_tag_matched - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "9953482 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/Multiple_flat_tags_matched",
+            "value": 195.7,
+            "unit": "ns/op\t     296 B/op\t       5 allocs/op",
+            "extra": "5880681 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/Multiple_flat_tags_matched - ns/op",
+            "value": 195.7,
+            "unit": "ns/op",
+            "extra": "5880681 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/Multiple_flat_tags_matched - B/op",
+            "value": 296,
+            "unit": "B/op",
+            "extra": "5880681 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/Multiple_flat_tags_matched - allocs/op",
+            "value": 5,
+            "unit": "allocs/op",
+            "extra": "5880681 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/Nested_composite_tag_matched",
+            "value": 256.1,
+            "unit": "ns/op\t     552 B/op\t       9 allocs/op",
+            "extra": "4647336 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/Nested_composite_tag_matched - ns/op",
+            "value": 256.1,
+            "unit": "ns/op",
+            "extra": "4647336 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/Nested_composite_tag_matched - B/op",
+            "value": 552,
+            "unit": "B/op",
+            "extra": "4647336 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/Nested_composite_tag_matched - allocs/op",
+            "value": 9,
+            "unit": "allocs/op",
+            "extra": "4647336 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/Mix_of_flat_and_nested_tags",
+            "value": 333.9,
+            "unit": "ns/op\t     776 B/op\t      12 allocs/op",
+            "extra": "3690079 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/Mix_of_flat_and_nested_tags - ns/op",
+            "value": 333.9,
+            "unit": "ns/op",
+            "extra": "3690079 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/Mix_of_flat_and_nested_tags - B/op",
+            "value": 776,
+            "unit": "B/op",
+            "extra": "3690079 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/Mix_of_flat_and_nested_tags - allocs/op",
+            "value": 12,
+            "unit": "allocs/op",
+            "extra": "3690079 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/All_tags_matched",
+            "value": 601.9,
+            "unit": "ns/op\t    1712 B/op\t      21 allocs/op",
+            "extra": "1959472 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/All_tags_matched - ns/op",
+            "value": 601.9,
+            "unit": "ns/op",
+            "extra": "1959472 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/All_tags_matched - B/op",
+            "value": 1712,
+            "unit": "B/op",
+            "extra": "1959472 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkCopyTags/All_tags_matched - allocs/op",
+            "value": 21,
+            "unit": "allocs/op",
+            "extra": "1959472 times\n4 procs"
           }
         ]
       }
