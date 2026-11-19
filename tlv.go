@@ -318,7 +318,9 @@ func FindFirstTag(tlvs []TLV, tag string) (TLV, bool) {
 		}
 
 		if len(tlv.TLVs) > 0 {
-			return FindFirstTag(tlv.TLVs, tag)
+			if found, ok := FindFirstTag(tlv.TLVs, tag); ok {
+				return found, true
+			}
 		}
 	}
 
