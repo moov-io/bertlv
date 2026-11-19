@@ -7,6 +7,8 @@ check:
 ifeq ($(OS),Windows_NT)
 	go test ./...
 else
+	@which wget >/dev/null || (echo "Error: wget required. Install with 'brew install wget' or 'apt-get install wget'"; exit 1)
+	@which bc >/dev/null || (echo "Error: bc required for the coverage gate. Install with 'brew install bc' or 'apt-get install bc'"; exit 1)
 	@wget -O lint-project.sh https://raw.githubusercontent.com/moov-io/infra/master/go/lint-project.sh
 	@chmod +x ./lint-project.sh
 	COVER_THRESHOLD=60.0 ./lint-project.sh
