@@ -1,11 +1,38 @@
+## v0.1.1 (Unreleased)
+
+BUG FIXES
+
+- return an error for invalid long-form lengths
+- search later siblings in FindFirstTag after a composite
+
+IMPROVEMENTS
+
+- feat: add tag mapping API (BuildTagMap, FindFirst, Find, GetTagMapStats)
+- test: expand fuzz coverage for Decode
+
 ## v0.1.0 (Released 2025-05-13)
 
 IMPROVEMENTS
 
 - fix: check index and set options properly in tlv
-- fix: skip padding bytes
-- fix: print new line when no description for tag found
+
+## v0.0.8 (Released 2025-04-03)
+
+IMPROVEMENTS
+
 - feat: add CopyTags method
+
+## v0.0.7 (Released 2025-04-01)
+
+IMPROVEMENTS
+
+- fix: print a new line when no description for a tag is found
+
+## v0.0.6 (Released 2025-02-19)
+
+BUG FIXES
+
+- fix: skip padding bytes
 
 ## v0.0.5 (Released 2025-02-12)
 
@@ -17,7 +44,7 @@ IMPROVEMENTS
 
 IMPROVEMENTS
 
-- Add Marshal and Unmarshal functions with struct tags
+- Add Unmarshal function with struct tags
 - Lint fixes
 - Update dependencies
 

@@ -69,6 +69,44 @@ func TestFindTag(t *testing.T) {
 	require.Equal(t, []byte{0xA0, 0x00, 0x00, 0x00, 0x04, 0x10, 0x10}, tag.Value)
 }
 
+func TestFindFirstTagAfterUnmatchedComposite(t *testing.T) {
+	// A composite that does not contain the target must not hide a later sibling.
+	data := []bertlv.TLV{
+		bertlv.NewComposite("70",
+			bertlv.NewTag("5A", []byte{0x41, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77}),
+		),
+		bertlv.NewTag("9F02", []byte{0x00, 0x00, 0x00, 0x00, 0x12, 0x34}),
+		bertlv.NewTag("5F2A", []byte{0x08, 0x40}),
+	}
+
+	tag, found := bertlv.FindFirstTag(data, "9F02")
+	require.True(t, found)
+	require.Equal(t, []byte{0x00, 0x00, 0x00, 0x00, 0x12, 0x34}, tag.Value)
+
+	tag, found = bertlv.FindFirstTag(data, "5F2A")
+	require.True(t, found)
+	require.Equal(t, []byte{0x08, 0x40}, tag.Value)
+}
+
+func TestFindTagByPathFirstMatchingSibling(t *testing.T) {
+	// FindTagByPath follows the first matching sibling only.
+	data := []bertlv.TLV{
+		bertlv.NewComposite("61",
+			bertlv.NewTag("4F", []byte{0xA0, 0x00, 0x00, 0x00, 0x03, 0x10, 0x10}),
+		),
+		bertlv.NewComposite("61",
+			bertlv.NewTag("50", []byte{0x4D, 0x61, 0x73, 0x74, 0x65, 0x72, 0x63, 0x61, 0x72, 0x64}),
+		),
+	}
+
+	_, found := bertlv.FindTagByPath(data, "61.50")
+	require.False(t, found)
+
+	tag, found := bertlv.FindTagByPath(data, "61.4F")
+	require.True(t, found)
+	require.Equal(t, []byte{0xA0, 0x00, 0x00, 0x00, 0x03, 0x10, 0x10}, tag.Value)
+}
+
 func TestUnmarshalSuccess(t *testing.T) {
 	data := []bertlv.TLV{
 		bertlv.NewTag("84", []byte{0x32, 0x50, 0x41, 0x59, 0x2E, 0x53, 0x59, 0x53, 0x2E, 0x44, 0x44, 0x46, 0x30, 0x31}),
